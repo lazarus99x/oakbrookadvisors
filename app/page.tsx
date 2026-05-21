@@ -64,7 +64,7 @@ export default function Home() {
           >
             <motion.img
               src="/leverfi.png"
-              alt="TradeWiseTab Logo"
+              alt="OakbrookAdvisors Logo"
               width={40}
               height={40}
               className="rounded-xl"
@@ -79,7 +79,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
-            TradeWiseTab
+            OakbrookAdvisors
             
           </motion.span>
         </motion.div>
@@ -470,7 +470,7 @@ export default function Home() {
                   icon: ShieldCheck, // or any security-related icon
                   title: "Secure & Transparent",
                   description:
-                    "Your assets and data are protected with enterprise-grade security, real-time audits, and full transparency—so you can focus on trading without worry.",
+                    "Your assets and data are protected with enterprise-grade security, real-time audits, and full transparencyâ€”so you can focus on trading without worry.",
                 },
                 {
                   icon: Users, // or a community/network icon
@@ -482,7 +482,7 @@ export default function Home() {
                   icon: Clock, // or a speed/performance icon
                   title: "24/7 Automated Trading",
                   description:
-                    "Set your strategies and let our bots execute trades around the clock—even while you sleep. Never miss an opportunity again.",
+                    "Set your strategies and let our bots execute trades around the clockâ€”even while you sleep. Never miss an opportunity again.",
                 },
               ].map((feature, index) => (
                 <motion.div
@@ -588,7 +588,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto space-y-8">
             <h2 className="text-4xl font-bold">Ready to Get Started?</h2>
             <p className="text-xl text-muted-foreground">
-              Join thousands of traders who have already discovered the TradeWiseTab
+              Join thousands of traders who have already discovered OakbrookAdvisors
               advantage.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -739,9 +739,11 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2025 TradeWiseTab. All rights reserved.</p>
+          <p>© 2025 OakbrookAdvisors. All rights reserved.</p>
         </div>
       </footer>
     </div>
   );
 }
+
+

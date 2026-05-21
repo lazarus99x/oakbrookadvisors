@@ -44,11 +44,24 @@ function ProfileContent() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({ user_id: user.id, full_name: fullName, phone })
-        .eq("user_id", user.id);
-      if (error) throw error;
+      const response = await fetch("/api/profile/update", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to update profile");
+      }
+
+      setFullName(result.profile?.full_name ?? fullName.trim());
+      setPhone(result.profile?.phone ?? phone.trim());
       toast.success("Profile updated successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update profile");
