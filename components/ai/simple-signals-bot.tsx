@@ -613,7 +613,7 @@ export function SimpleSignalsBot() {
         </div>
         <ul className="list-disc pl-5 text-sm space-y-1">
           <li>
-            Minimum deposit to start: <span className="font-medium">$100</span>
+            Minimum deposit to start: <span className="font-medium">$500</span>
           </li>
           <li>
             Choose <b>Risk Level</b>:
