@@ -208,7 +208,6 @@ export default function AdminDepositsPage() {
           iconUrl = await uploadIcon(iconFile);
         } catch (iconErr: any) {
           console.warn("Icon upload failed, saving wallet without icon:", iconErr?.message);
-          toast.warning("Icon upload failed — wallet saved without icon. Check your Supabase Storage bucket.");
           iconUrl = ""; // continue without icon
         }
       }

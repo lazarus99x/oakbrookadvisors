@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { TrendingUp, Wallet, Building2 } from "lucide-react";
 
 export function InvestmentRequestForm() {
+  const MINIMUM_INVESTMENT = 500;
   const { user } = useUser();
   const [investmentAmount, setInvestmentAmount] = useState("");
   const [selectedStock, setSelectedStock] = useState("");
@@ -91,6 +92,11 @@ export function InvestmentRequestForm() {
     const amount = Number(investmentAmount);
     if (!amount || amount <= 0) {
       toast.error("Please enter a valid investment amount");
+      return;
+    }
+
+    if (amount < MINIMUM_INVESTMENT) {
+      toast.error(`Minimum investment is $${MINIMUM_INVESTMENT}`);
       return;
     }
 
@@ -205,13 +211,16 @@ export function InvestmentRequestForm() {
           <Input
             type="number"
             step="0.01"
-            min="0"
+            min={MINIMUM_INVESTMENT}
             max={availableBalance}
             value={investmentAmount}
             onChange={(e) => setInvestmentAmount(e.target.value)}
-            placeholder="0.00"
+            placeholder={`${MINIMUM_INVESTMENT}.00`}
             className="text-lg"
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Minimum investment: ${MINIMUM_INVESTMENT}
+          </p>
           <button
             onClick={() => setInvestmentAmount(availableBalance.toString())}
             className="text-xs text-primary mt-1 hover:underline"
@@ -244,7 +253,7 @@ export function InvestmentRequestForm() {
           onClick={handleSubmit}
           loading={loading}
           className="w-full"
-          disabled={!investmentAmount || !selectedStock || Number(investmentAmount) <= 0}
+          disabled={!investmentAmount || !selectedStock || Number(investmentAmount) < MINIMUM_INVESTMENT}
         >
           <TrendingUp className="w-4 h-4 mr-2" />
           Submit Investment Request
