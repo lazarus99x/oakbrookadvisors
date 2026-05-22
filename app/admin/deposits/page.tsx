@@ -29,6 +29,7 @@ export default function AdminDepositsPage() {
   const [iconPreview, setIconPreview] = useState<string>("");
   const [copied, setCopied] = useState<string | null>(null);
   const [viewingProof, setViewingProof] = useState<string | null>(null);
+  const isCreatingWallet = editingWallet === "new";
 
   useEffect(() => {
     loadData();
@@ -212,8 +213,7 @@ export default function AdminDepositsPage() {
         }
       }
 
-      // Deactivate old wallet for this currency if it exists
-      if (editingWallet) {
+      if (!isCreatingWallet && editingWallet) {
         // Updating existing wallet
         const updateData: any = {
           address: walletForm.address.trim(),
@@ -449,7 +449,7 @@ export default function AdminDepositsPage() {
           {editingWallet && (
             <Card className="p-3 sm:p-4 mb-4 sm:mb-6 bg-muted">
               <div className="space-y-3 sm:space-y-4">
-                {editingWallet === "new" && (
+                {isCreatingWallet && (
                   <div>
                     <label className="text-sm font-medium mb-2 block">Currency</label>
                     <select
@@ -507,10 +507,10 @@ export default function AdminDepositsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <LoadingButton onClick={saveWallet} loading={loading}>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save
-                  </LoadingButton>
+                    <LoadingButton onClick={saveWallet} loading={loading}>
+                      <Save className="w-4 h-4 mr-2" />
+                      {isCreatingWallet ? "Create Wallet" : "Save Changes"}
+                    </LoadingButton>
                   <Button onClick={cancelEdit} variant="outline">
                     Cancel
                   </Button>
@@ -735,4 +735,3 @@ export default function AdminDepositsPage() {
     </div>
   );
 }
-
