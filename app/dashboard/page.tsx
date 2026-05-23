@@ -328,7 +328,7 @@ export default function DashboardPage() {
 
             {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="p-6 bg-gradient-to-br from-[#00FE01]/10 to-[#00FE01]/20 border-[#00FE01]/30">
+              <Card className="p-6 bg-linear-to-br from-[#00FE01]/10 to-[#00FE01]/20 border-[#00FE01]/30">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                   <DollarSign className="w-8 h-8 text-[#00FE01]" />
                 </div>
               </Card>
-              <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
+              <Card className="p-6 bg-linear-to-br from-green-500/10 to-green-600/10 border-green-500/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -363,7 +363,7 @@ export default function DashboardPage() {
                 </div>
               </Card>
 
-              <Card className="p-6 bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
+              <Card className="p-6 bg-linear-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -381,7 +381,7 @@ export default function DashboardPage() {
                 </div>
               </Card>
 
-              <Card className="p-6 bg-gradient-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/20">
+              <Card className="p-6 bg-linear-to-br from-cyan-500/10 to-cyan-600/10 border-cyan-500/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
@@ -405,9 +405,9 @@ export default function DashboardPage() {
               <Link href="/dashboard/funding" className="block w-full max-w-xs">
                 <span
                   className="inline-flex items-center justify-center w-full px-6 py-3 rounded-xl text-sm font-extrabold tracking-wide text-black shadow-lg
-                  bg-gradient-to-r from-yellow-200 via-amber-300 to-yellow-400
+                  bg-linear-to-r from-yellow-200 via-amber-300 to-yellow-400
                   animate-[shimmer_2.2s_infinite]
-                  [background-size:200%_100%]
+                  bg-size-[200%_100%]
                   hover:from-yellow-300 hover:via-amber-400 hover:to-yellow-500 transition-transform active:scale-[0.99]"
                   style={{
                     backgroundImage:
