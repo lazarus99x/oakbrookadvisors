@@ -132,29 +132,21 @@ export default function DepositPage() {
   async function uploadProof(file: File): Promise<string> {
     if (!user?.id) throw new Error("User not authenticated");
 
-    const fileName = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("userId", user.id);
 
-    const { error: uploadError } = await supabase.storage
-      .from("deposit-proofs")
-      .upload(fileName, file, { upsert: false });
+    const response = await fetch("/api/deposit/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-    if (uploadError) {
-      // If file exists, remove and retry
-      if (uploadError.message?.includes("already exists")) {
-        await supabase.storage.from("deposit-proofs").remove([fileName]);
-        const { error: retryError } = await supabase.storage
-          .from("deposit-proofs")
-          .upload(fileName, file, { upsert: false });
+    const data = await response.json();
 
-        if (retryError) throw new Error(`Upload failed: ${retryError.message}`);
-      } else {
-        throw new Error(`Upload failed: ${uploadError.message}`);
-      }
+    if (!response.ok) {
+      throw new Error(data.error || "Upload failed");
     }
 
-    const { data } = supabase.storage
-      .from("deposit-proofs")
-      .getPublicUrl(fileName);
     return data.publicUrl;
   }
 
