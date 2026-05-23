@@ -130,11 +130,13 @@ export function SimpleSignalsBot() {
       await supabase.from("user_trades").insert({
         user_id: user.id,
         symbol: "BTC/USD",
-        side: pl >= 0 ? "BUY" : "SELL",
+        trade_type: pl >= 0 ? "BUY" : "SELL",
+        amount: 0,
         price: 0,
+        total_value: amount,
         status: "ready",
         profit_loss: pl,
-        description: `AI bot session completed. Risk: ${risk}. Invested: $${amount}. ROI: ${Math.abs(Math.round(roi * 100))}%. Approval required: ${!mustApprove ? "Admin must decide" : "Must approve"}`,
+        admin_notes: `AI bot session completed. Risk: ${risk}. Invested: $${amount}. ROI: ${Math.abs(Math.round(roi * 100))}%. Approval required: ${!mustApprove ? "Admin must decide" : "Must approve"}`,
         risk_level: risk,
         invested_amount: amount,
         roi: Math.abs(Math.round(roi * 100)),
@@ -357,7 +359,6 @@ export function SimpleSignalsBot() {
         price: foundPrice,
         total_value,
         status: "pending",
-        signal_id: signal.id,
       });
       if (error) throw error;
 
