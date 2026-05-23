@@ -136,10 +136,10 @@ export default function AdminTradesPage() {
         user_id: userId,
         type: isLoss ? "loss" : "profit",
         amount: adjustment,
-        description: `Admin added ${isLoss ? "loss" : "profit"} to trade`,
+        description: `Admin ${isLoss ? "deducted" : "added"} ${isLoss ? "profit" : "profit"} to trade: $${Math.abs(amount)}`,
       });
 
-      toast.success(`Successfully added ${isLoss ? "loss" : "profit"}`);
+      toast.success(`Successfully ${isLoss ? "deducted" : "added"} $${amount} ${isLoss ? "profit" : "profit"}`);
       setEditingTrade(null);
       setProfitAmount("");
       loadTrades();
@@ -564,7 +564,7 @@ export default function AdminTradesPage() {
                             loading={loading}
                             className="flex-1 bg-red-600 hover:bg-red-700 h-8 text-xs"
                           >
-                            Add Loss
+                            Deduct Profit
                           </LoadingButton>
                         </div>
                         <Button

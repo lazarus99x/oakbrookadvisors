@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import { useUser } from "@/lib/auth";
@@ -25,7 +25,7 @@ export function TradeHistory() {
           table: "user_trades",
           filter: `user_id=eq.${user.id}`,
         },
-        () => loadTrades()
+        () => loadTrades(),
       )
       .subscribe();
 
@@ -56,13 +56,17 @@ export function TradeHistory() {
 
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">Loading trades...</div>
+      <div className="text-center py-8 text-muted-foreground">
+        Loading trades...
+      </div>
     );
   }
 
   return (
     <Card className="border-border bg-card p-4">
-      <h3 className="text-lg font-semibold text-foreground mb-4">Recent Trades</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">
+        Recent Trades
+      </h3>
 
       {trades.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
@@ -78,7 +82,9 @@ export function TradeHistory() {
               <div className="flex items-center gap-3">
                 <span
                   className={`px-2 py-1 rounded text-xs font-semibold ${
-                    trade.trade_type === "BUY" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                    trade.trade_type === "BUY"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400"
                   }`}
                 >
                   {trade.trade_type}
@@ -91,26 +97,36 @@ export function TradeHistory() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-semibold">{Number(trade.amount).toFixed(4)}</div>
+                <div className="font-semibold">
+                  {Number(trade.amount).toFixed(4)}
+                </div>
                 <div className="text-sm text-muted-foreground">
                   ${Number(trade.price).toFixed(2)}
                 </div>
                 <div className="text-xs">
                   <span
                     className={`${
-                      trade.status === "approved" || trade.status === "completed"
+                      trade.status === "approved" ||
+                      trade.status === "completed"
                         ? "text-green-500"
                         : trade.status === "rejected"
-                        ? "text-red-500"
-                        : "text-yellow-500"
+                          ? "text-red-500"
+                          : trade.risk_level
+                            ? "text-blue-500"
+                            : "text-yellow-500"
                     }`}
                   >
-                    {trade.status}
+                    {trade.risk_level && trade.status === "ready"
+                      ? "Processing"
+                      : trade.status}
                   </span>
                 </div>
                 {trade.profit_loss !== undefined && trade.profit_loss !== 0 && (
-                  <div className={`text-xs font-bold ${Number(trade.profit_loss) > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {Number(trade.profit_loss) > 0 ? '+' : ''}${Number(trade.profit_loss).toFixed(2)}
+                  <div
+                    className={`text-xs font-bold ${Number(trade.profit_loss) > 0 ? "text-green-500" : "text-red-500"}`}
+                  >
+                    {Number(trade.profit_loss) > 0 ? "+" : ""}$
+                    {Number(trade.profit_loss).toFixed(2)}
                   </div>
                 )}
               </div>
@@ -119,5 +135,5 @@ export function TradeHistory() {
         </div>
       )}
     </Card>
-  )
+  );
 }

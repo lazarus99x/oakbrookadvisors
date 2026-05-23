@@ -31,7 +31,7 @@ export default function AdminInvestmentsPage() {
           schema: "public",
           table: "investment_requests",
         },
-        () => loadInvestments()
+        () => loadInvestments(),
       )
       .subscribe();
 
@@ -71,7 +71,7 @@ export default function AdminInvestmentsPage() {
             user_name: profile?.full_name || inv.user_id,
             user_email: profile?.email || "N/A",
           };
-        })
+        }),
       );
 
       setInvestments(investmentsWithUsers);
@@ -86,7 +86,7 @@ export default function AdminInvestmentsPage() {
   async function handleInvestmentAction(
     investmentId: string,
     action: "approve" | "reject",
-    reason?: string
+    reason?: string,
   ) {
     setLoading(true);
     try {
@@ -99,22 +99,13 @@ export default function AdminInvestmentsPage() {
       if (!investment) throw new Error("Investment not found");
 
       if (action === "approve") {
-        // Check balance
-        const { data: balance } = await supabase
-          .from("user_balances")
-          .select("account_balance, balance")
-          .eq("user_id", investment.user_id)
-          .single();
-
-        const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
-        const finalAmount = approvedAmount ? Number(approvedAmount) : Number(investment.investment_amount);
-        const finalShares = approvedShares ? Number(approvedShares) : Number(investment.target_shares);
-
-        if (currentBalance < finalAmount) {
-          toast.error("User has insufficient balance");
-          setLoading(false);
-          return;
-        }
+        // No balance check - admin can approve any investment and manually add profit later
+        const finalAmount = approvedAmount
+          ? Number(approvedAmount)
+          : Number(investment.investment_amount);
+        const finalShares = approvedShares
+          ? Number(approvedShares)
+          : Number(investment.target_shares);
 
         // Get current stock price
         const { data: stockData } = await supabase
@@ -123,18 +114,31 @@ export default function AdminInvestmentsPage() {
           .eq("symbol", investment.symbol)
           .single();
 
-        const currentPrice = stockData ? Number(stockData.price) : Number(investment.current_price);
+        const currentPrice = stockData
+          ? Number(stockData.price)
+          : Number(investment.current_price);
 
         // Deduct from balance
-        const newBalance = currentBalance - finalAmount;
-        await supabase
+        const { data: balance } = await supabase
           .from("user_balances")
-          .upsert({
+          .select("account_balance, balance")
+          .eq("user_id", investment.user_id)
+          .single();
+
+        const currentBalance = Number(
+          balance?.account_balance || balance?.balance || 0,
+        );
+        const newBalance = Math.max(0, currentBalance - finalAmount);
+
+        await supabase.from("user_balances").upsert(
+          {
             user_id: investment.user_id,
             account_balance: newBalance,
             balance: newBalance,
             updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
+          },
+          { onConflict: "user_id" },
+        );
 
         // Add to holdings (stocks)
         const { data: existingHolding } = await supabase
@@ -147,7 +151,8 @@ export default function AdminInvestmentsPage() {
         if (existingHolding) {
           const newAmount = Number(existingHolding.amount) + finalShares;
           const newAvgPrice =
-            (Number(existingHolding.average_buy_price || 0) * Number(existingHolding.amount) +
+            (Number(existingHolding.average_buy_price || 0) *
+              Number(existingHolding.amount) +
               currentPrice * finalShares) /
             newAmount;
 
@@ -156,7 +161,8 @@ export default function AdminInvestmentsPage() {
             .update({
               amount: newAmount,
               average_buy_price: newAvgPrice,
-              total_invested: Number(existingHolding.total_invested) + finalAmount,
+              total_invested:
+                Number(existingHolding.total_invested) + finalAmount,
               last_updated: new Date().toISOString(),
             })
             .eq("id", existingHolding.id);
@@ -191,7 +197,7 @@ export default function AdminInvestmentsPage() {
           })
           .eq("id", investmentId);
 
-        toast.success("Investment approved and processed");
+        toast.success("Investment approved. Profit can be added manually.");
       } else {
         // Reject investment
         await supabase
@@ -223,17 +229,21 @@ export default function AdminInvestmentsPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Investment Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+          Investment Management
+        </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Review and approve stock investment requests
         </p>
       </div>
 
-      <Tabs value={filterStatus} onValueChange={setFilterStatus} className="mb-6">
+      <Tabs
+        value={filterStatus}
+        onValueChange={setFilterStatus}
+        className="mb-6"
+      >
         <TabsList className="grid w-full max-w-md grid-cols-4">
-          <TabsTrigger value="pending">
-            Pending ({pendingCount})
-          </TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -259,11 +269,12 @@ export default function AdminInvestmentsPage() {
                     </span>
                     <span
                       className={`text-xs px-2 py-1 rounded ${
-                        investment.status === "approved" || investment.status === "completed"
+                        investment.status === "approved" ||
+                        investment.status === "completed"
                           ? "bg-green-500/20 text-green-500"
                           : investment.status === "rejected"
-                          ? "bg-red-500/20 text-red-500"
-                          : "bg-yellow-500/20 text-yellow-500"
+                            ? "bg-red-500/20 text-red-500"
+                            : "bg-yellow-500/20 text-yellow-500"
                       }`}
                     >
                       {investment.status.toUpperCase()}
@@ -273,17 +284,20 @@ export default function AdminInvestmentsPage() {
                     User: {investment.user_name} ({investment.user_email})
                   </p>
                   <p className="text-sm text-muted-foreground mb-1">
-                    Requested: ${Number(investment.investment_amount).toFixed(2)} | 
-                    Estimated Shares: {Number(investment.target_shares).toFixed(4)}
+                    Requested: $
+                    {Number(investment.investment_amount).toFixed(2)} |
+                    Estimated Shares:{" "}
+                    {Number(investment.target_shares).toFixed(4)}
                   </p>
                   {investment.approved_amount && (
                     <p className="text-sm text-green-500 mb-1">
-                      Approved: ${Number(investment.approved_amount).toFixed(2)} | 
-                      Shares: {Number(investment.approved_shares).toFixed(4)}
+                      Approved: ${Number(investment.approved_amount).toFixed(2)}{" "}
+                      | Shares: {Number(investment.approved_shares).toFixed(4)}
                     </p>
                   )}
                   <p className="text-sm text-muted-foreground mb-1">
-                    Price at request: ${Number(investment.current_price).toFixed(2)}
+                    Price at request: $
+                    {Number(investment.current_price).toFixed(2)}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">
                     {new Date(investment.created_at).toLocaleString()}
@@ -317,7 +331,9 @@ export default function AdminInvestmentsPage() {
                         />
                         <div className="flex gap-2">
                           <LoadingButton
-                            onClick={() => handleInvestmentAction(investment.id, "approve")}
+                            onClick={() =>
+                              handleInvestmentAction(investment.id, "approve")
+                            }
                             loading={loading}
                             size="sm"
                           >
@@ -354,7 +370,11 @@ export default function AdminInvestmentsPage() {
                           onClick={() => {
                             const reason = prompt("Enter rejection reason:");
                             if (reason) {
-                              handleInvestmentAction(investment.id, "reject", reason);
+                              handleInvestmentAction(
+                                investment.id,
+                                "reject",
+                                reason,
+                              );
                             }
                           }}
                           variant="destructive"

@@ -40,7 +40,7 @@ export default function DashboardPage() {
   useEffect(() => {
     // Start market updater on mount
     const stopUpdater = startMarketUpdater(5000);
-    
+
     // Generate signals every 30 seconds
     const signalInterval = setInterval(generateSignals, 30000);
     generateSignals(); // Initial generation
@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
     if (data) {
       setAssets(data);
-      if (data.length > 0 && !data.find(a => a.symbol === selectedAsset)) {
+      if (data.length > 0 && !data.find((a) => a.symbol === selectedAsset)) {
         setSelectedAsset(data[0].symbol);
       }
     }
@@ -85,8 +85,15 @@ export default function DashboardPage() {
           .maybeSingle();
 
         if (balanceError) {
-          console.error("Error loading balance:", balanceError?.message || balanceError?.code || JSON.stringify(balanceError));
-          toast.error(`Balance load error: ${balanceError?.message || balanceError?.code || "Unknown error"}`);
+          console.error(
+            "Error loading balance:",
+            balanceError?.message ||
+              balanceError?.code ||
+              JSON.stringify(balanceError),
+          );
+          toast.error(
+            `Balance load error: ${balanceError?.message || balanceError?.code || "Unknown error"}`,
+          );
           // Still show zeros so dashboard is usable
         } else if (balanceData) {
           console.log("Found balance record:", balanceData);
@@ -108,8 +115,8 @@ export default function DashboardPage() {
             accountBalance = allTransactions
               .filter((tx) =>
                 ["deposit", "loan_disbursal", "funding_approval"].includes(
-                  tx.type
-                )
+                  tx.type,
+                ),
               )
               .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
 
@@ -121,8 +128,8 @@ export default function DashboardPage() {
             fundingBalance = allTransactions
               .filter((tx) =>
                 ["deposit", "loan_disbursal", "funding_approval"].includes(
-                  tx.type
-                )
+                  tx.type,
+                ),
               )
               .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
           }
@@ -153,10 +160,14 @@ export default function DashboardPage() {
             // Log the real error details (Supabase errors have .message and .code)
             console.error(
               "Error creating balance record:",
-              insertError?.message || insertError?.code || JSON.stringify(insertError)
+              insertError?.message ||
+                insertError?.code ||
+                JSON.stringify(insertError),
             );
             // Non-fatal: show $0 balances so dashboard still loads
-            console.warn("Balance record creation blocked (likely RLS). Dashboard will show $0. Run database/supabase.fix-clerk-rls.sql in Supabase to fix.");
+            console.warn(
+              "Balance record creation blocked (likely RLS). Dashboard will show $0. Run database/supabase.fix-clerk-rls.sql in Supabase to fix.",
+            );
           }
           // Always set zeros so the dashboard renders
           setBalances({
@@ -178,8 +189,15 @@ export default function DashboardPage() {
             .limit(20);
 
         if (transactionError) {
-          console.error("Error loading transactions:", transactionError?.message || transactionError?.code || JSON.stringify(transactionError));
-          toast.error(`Transaction load error: ${transactionError?.message || transactionError?.code || "Unknown error"}`);
+          console.error(
+            "Error loading transactions:",
+            transactionError?.message ||
+              transactionError?.code ||
+              JSON.stringify(transactionError),
+          );
+          toast.error(
+            `Transaction load error: ${transactionError?.message || transactionError?.code || "Unknown error"}`,
+          );
           // Non-fatal
         } else {
           console.log("Loaded transactions:", transactionData);
@@ -225,7 +243,7 @@ export default function DashboardPage() {
             });
             toast.success("Balance updated!");
           }
-        }
+        },
       )
       .subscribe();
 
@@ -248,7 +266,7 @@ export default function DashboardPage() {
             // Reload balances to recalculate
             loadData();
           }
-        }
+        },
       )
       .subscribe();
 
@@ -310,24 +328,6 @@ export default function DashboardPage() {
 
             {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Account Balance
-                    </p>
-                    <p className="text-2xl font-bold text-foreground mt-1">
-                      {loading ? (
-                        <span className="inline-block w-24 h-7 bg-muted animate-pulse rounded" />
-                      ) : (
-                        formatCurrency(balances.account_balance)
-                      )}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-blue-500" />
-                </div>
-              </Card>
-
               <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
                 <div className="flex items-center justify-between">
                   <div>
@@ -432,7 +432,8 @@ export default function DashboardPage() {
                 >
                   {assets.map((a) => (
                     <option key={a.symbol} value={a.symbol}>
-                      {a.symbol} — ${Number(a.price).toFixed(2)} ({Number(a.change_24h||0).toFixed(2)}%)
+                      {a.symbol} — ${Number(a.price).toFixed(2)} (
+                      {Number(a.change_24h || 0).toFixed(2)}%)
                     </option>
                   ))}
                 </select>
@@ -447,7 +448,9 @@ export default function DashboardPage() {
                 <ForexCandles symbol={"EUR/USD"} />
                 <div className="mt-4">
                   <SimpleSignalsBot />
-                  <div className="mt-3"><SignalsList /></div>
+                  <div className="mt-3">
+                    <SignalsList />
+                  </div>
                 </div>
               </div>
 

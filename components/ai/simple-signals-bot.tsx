@@ -46,7 +46,7 @@ export function SimpleSignalsBot() {
           return arr.slice(-40);
         });
       },
-      energetic ? 150 : 500
+      energetic ? 150 : 500,
     );
     setSparkTicker(t);
     return () => clearInterval(t);
@@ -58,7 +58,7 @@ export function SimpleSignalsBot() {
     const timer = setInterval(() => {
       const left = Math.max(
         0,
-        Math.floor((new Date(sessionEndsAt).getTime() - Date.now()) / 1000)
+        Math.floor((new Date(sessionEndsAt).getTime() - Date.now()) / 1000),
       );
       setSessionLeft(left);
       if (left <= 0) {
@@ -142,7 +142,7 @@ export function SimpleSignalsBot() {
         roi: Math.abs(Math.round(roi * 100)),
         admin_must_approve: !mustApprove,
       });
-      toast.success("AI session completed. Trade ready for admin approval.");
+      toast.success("AI trading session completed. Processing trade...");
     } catch (e) {
       console.error(e);
     }
@@ -162,7 +162,7 @@ export function SimpleSignalsBot() {
           table: "trading_signals",
           filter: "active=eq.true",
         },
-        () => loadSignals()
+        () => loadSignals(),
       )
       .subscribe();
 
