@@ -328,6 +328,23 @@ export default function DashboardPage() {
 
             {/* Balance Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <Card className="p-6 bg-gradient-to-br from-[#00FE01]/10 to-[#00FE01]/20 border-[#00FE01]/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Total Balance
+                    </p>
+                    <p className="text-2xl font-bold text-[#00FE01] mt-1">
+                      {loading ? (
+                        <span className="inline-block w-24 h-7 bg-muted animate-pulse rounded" />
+                      ) : (
+                        formatCurrency(balances.total_balance)
+                      )}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-[#00FE01]" />
+                </div>
+              </Card>
               <Card className="p-6 bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
                 <div className="flex items-center justify-between">
                   <div>
@@ -379,24 +396,6 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <CreditCard className="w-8 h-8 text-cyan-500" />
-                </div>
-              </Card>
-
-              <Card className="p-6 bg-gradient-to-br from-[#00FE01]/10 to-[#00FE01]/20 border-[#00FE01]/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Total Balance
-                    </p>
-                    <p className="text-2xl font-bold text-[#00FE01] mt-1">
-                      {loading ? (
-                        <span className="inline-block w-24 h-7 bg-muted animate-pulse rounded" />
-                      ) : (
-                        formatCurrency(balances.total_balance)
-                      )}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-[#00FE01]" />
                 </div>
               </Card>
             </div>
