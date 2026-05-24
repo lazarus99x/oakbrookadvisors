@@ -25,9 +25,8 @@ export default function AdminFundManagementPage() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [transactionType, setTransactionType] = useState<
-    "deposit" | "withdrawal" | "profit" | "loss" | "trading_balance"
+    "deposit" | "withdrawal" | "profit" | "loss"
   >("deposit");
-  const [tradingBalanceAction, setTradingBalanceAction] = useState<"add" | "subtract">("add");
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -160,10 +159,6 @@ export default function AdminFundManagementPage() {
       if (transactionType === "profit") {
         updateData.profit_balance =
           (currentBalance.profit_balance || 0) + deltaAmount;
-      } else if (transactionType === "trading_balance") {
-        const tradingDelta = tradingBalanceAction === "subtract" ? -amountNum : amountNum;
-        updateData.trading_balance =
-          (currentBalance.trading_balance || 0) + tradingDelta;
       } else if (transactionType === "deposit") {
         updateData.account_balance =
           (currentBalance.account_balance || currentBalance.balance || 0) +
@@ -224,24 +219,17 @@ export default function AdminFundManagementPage() {
         return;
       }
 
-      // Add transaction record - map trading_balance to deposit/withdrawal
-      let transactionType_mapped = transactionType;
-      if (transactionType === "trading_balance") {
-        transactionType_mapped = tradingBalanceAction === "add" ? "deposit" : "withdrawal";
-      }
-
+      // Add transaction record - try with description first, fallback without it
       let transactionData = {
         user_id: selectedUser.id,
-        type: transactionType_mapped,
+        type: transactionType,
         amount: amountNum,
       };
 
-      // Add description
-      let desc = description || `${transactionType} adjustment`;
-      if (transactionType === "trading_balance") {
-        desc = description || `${tradingBalanceAction === "add" ? "Added to" : "Subtracted from"} trading balance: $${amountNum}`;
+      // Try to add description if provided
+      if (description) {
+        transactionData = { ...transactionData, description };
       }
-      transactionData = { ...transactionData, description: desc };
 
       const { error: transactionError } = await supabase
         .from("transactions")
@@ -251,9 +239,9 @@ export default function AdminFundManagementPage() {
         console.error("Error creating transaction:", transactionError);
         console.error("Transaction data:", {
           user_id: selectedUser.id,
-          type: transactionType_mapped,
+          type: transactionType,
           amount: amountNum,
-          description: desc,
+          description: description || `${transactionType} adjustment`,
         });
         toast.error(`Error recording transaction: ${transactionError.message}`);
         return;
@@ -268,11 +256,9 @@ export default function AdminFundManagementPage() {
           ? "deposited"
           : transactionType === "withdrawal"
             ? "withdrawn"
-            : transactionType === "trading_balance"
-              ? `${tradingBalanceAction === "subtract" ? "deducted from" : "added to"} trading balance`
-              : transactionType === "profit"
-                ? "added profit"
-                : "added loss";
+            : transactionType === "profit"
+              ? "added profit"
+              : "added loss";
 
       toast.success(
         `Successfully ${actionText} $${amountNum} to ${selectedUser.firstName || selectedUser.id}`
@@ -478,25 +464,8 @@ export default function AdminFundManagementPage() {
                   <option value="withdrawal">Withdrawal</option>
                   <option value="profit">Add Profit</option>
                   <option value="loss">Add Loss</option>
-                  <option value="trading_balance">Manage Trading Balance</option>
                 </select>
               </div>
-
-              {transactionType === "trading_balance" && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Action
-                  </label>
-                  <select
-                    className="w-full border rounded px-3 py-2 bg-background"
-                    value={tradingBalanceAction}
-                    onChange={(e) => setTradingBalanceAction(e.target.value as any)}
-                  >
-                    <option value="add">Add to Trading Balance</option>
-                    <option value="subtract">Subtract from Trading Balance</option>
-                  </select>
-                </div>
-              )}
 
               <div>
                 <label className="block text-sm font-medium mb-1">Amount</label>
@@ -526,15 +495,21 @@ export default function AdminFundManagementPage() {
                 onClick={applyTransaction}
                 loading={actionLoading === "transaction"}
                 className={`w-full ${
-                  transactionType === "deposit" || transactionType === "profit" || (transactionType === "trading_balance" && tradingBalanceAction === "add")
+                  transactionType === "deposit" || transactionType === "profit"
                     ? "bg-green-500 hover:bg-green-600"
                     : "bg-red-500 hover:bg-red-600"
                 }`}
               >
-                {(transactionType === "deposit" || transactionType === "profit" || (transactionType === "trading_balance" && tradingBalanceAction === "add")) && (
+                {transactionType === "deposit" && (
                   <TrendingUp className="w-4 h-4 mr-2" />
                 )}
-                {(transactionType === "withdrawal" || transactionType === "loss" || (transactionType === "trading_balance" && tradingBalanceAction === "subtract")) && (
+                {transactionType === "withdrawal" && (
+                  <TrendingDown className="w-4 h-4 mr-2" />
+                )}
+                {transactionType === "profit" && (
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                )}
+                {transactionType === "loss" && (
                   <TrendingDown className="w-4 h-4 mr-2" />
                 )}
                 {transactionType === "deposit"
@@ -543,11 +518,7 @@ export default function AdminFundManagementPage() {
                     ? "Withdraw Funds"
                     : transactionType === "profit"
                       ? "Add Profit"
-                      : transactionType === "loss"
-                        ? "Add Loss"
-                        : transactionType === "trading_balance"
-                          ? `${tradingBalanceAction === "add" ? "Add" : "Subtract"} Trading Balance`
-                          : "Apply Transaction"}
+                      : "Add Loss"}
               </LoadingButton>
             </div>
           ) : (

@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { TrendingUp, Wallet, Building2 } from "lucide-react";
 
 export function InvestmentRequestForm() {
-  const MINIMUM_INVESTMENT = 500;
   const { user } = useUser();
   const [investmentAmount, setInvestmentAmount] = useState("");
   const [selectedStock, setSelectedStock] = useState("");
@@ -42,16 +41,12 @@ export function InvestmentRequestForm() {
       // Load balance
       const { data: balanceData } = await supabase
         .from("user_balances")
-        .select("account_balance, profit_balance, balance")
+        .select("account_balance, balance")
         .eq("user_id", user.id)
         .single();
 
       if (balanceData) {
-        const total =
-          Number(balanceData.account_balance || 0) +
-            Number(balanceData.profit_balance || 0) ||
-          Number(balanceData.balance || 0);
-        setAvailableBalance(total);
+        setAvailableBalance(Number(balanceData.account_balance || balanceData.balance || 0));
       }
     }
 
@@ -70,7 +65,7 @@ export function InvestmentRequestForm() {
         },
         () => {
           loadData();
-        },
+        }
       )
       .subscribe();
 
@@ -99,11 +94,6 @@ export function InvestmentRequestForm() {
       return;
     }
 
-    if (amount < MINIMUM_INVESTMENT) {
-      toast.error(`Minimum investment is $${MINIMUM_INVESTMENT}`);
-      return;
-    }
-
     if (amount > availableBalance) {
       toast.error("Insufficient balance");
       return;
@@ -119,49 +109,24 @@ export function InvestmentRequestForm() {
     try {
       const targetShares = amount / currentPrice;
 
-      const { error: reqError } = await supabase
-        .from("investment_requests")
-        .insert({
-          user_id: user.id,
-          symbol: selectedStock,
-          investment_amount: amount,
-          target_shares: targetShares,
-          current_price: currentPrice,
-          status: "pending",
-        });
+      const { error: reqError } = await supabase.from("investment_requests").insert({
+        user_id: user.id,
+        symbol: selectedStock,
+        investment_amount: amount,
+        target_shares: targetShares,
+        current_price: currentPrice,
+        status: "pending",
+      });
 
       if (reqError) throw reqError;
 
-      // Deduct balance — draw from account_balance first, overflow to profit_balance
-      const { data: currentBal } = await supabase
-        .from("user_balances")
-        .select("account_balance, profit_balance")
-        .eq("user_id", user.id)
-        .single();
-
-      const acct = Number(currentBal?.account_balance || 0);
-      const profit = Number(currentBal?.profit_balance || 0);
-      let remaining = amount;
-      let newAcct = acct;
-      let newProfit = profit;
-
-      if (acct >= remaining) {
-        newAcct = acct - remaining;
-      } else {
-        remaining -= acct;
-        newAcct = 0;
-        newProfit = profit - remaining;
-      }
-
+      // Deduct balance
+      const newBalance = availableBalance - amount;
       const { error: balanceError } = await supabase
         .from("user_balances")
-        .update({
-          account_balance: newAcct,
-          profit_balance: newProfit,
-          balance: newAcct + newProfit,
-        })
+        .update({ account_balance: newBalance })
         .eq("user_id", user.id);
-
+        
       if (balanceError) console.error("Balance update error:", balanceError);
 
       // Log transaction
@@ -172,7 +137,7 @@ export function InvestmentRequestForm() {
         description: `Investment Request: ${targetShares.toFixed(4)} shares of ${selectedStock}`,
         status: "completed",
       });
-
+      
       if (txError) console.error("Transaction log error:", txError);
 
       toast.success("Investment request submitted! Awaiting admin approval.");
@@ -181,16 +146,12 @@ export function InvestmentRequestForm() {
       // Refresh balance
       const { data: balanceData } = await supabase
         .from("user_balances")
-        .select("account_balance, profit_balance, balance")
+        .select("account_balance, balance")
         .eq("user_id", user.id)
         .single();
 
       if (balanceData) {
-        const total =
-          Number(balanceData.account_balance || 0) +
-            Number(balanceData.profit_balance || 0) ||
-          Number(balanceData.balance || 0);
-        setAvailableBalance(total);
+        setAvailableBalance(Number(balanceData.account_balance || balanceData.balance || 0));
       }
     } catch (error: any) {
       console.error("Error submitting investment:", error);
@@ -200,10 +161,9 @@ export function InvestmentRequestForm() {
     }
   };
 
-  const estimatedShares =
-    investmentAmount && currentPrice > 0
-      ? (Number(investmentAmount) / currentPrice).toFixed(4)
-      : "0";
+  const estimatedShares = investmentAmount && currentPrice > 0
+    ? (Number(investmentAmount) / currentPrice).toFixed(4)
+    : "0";
 
   return (
     <Card className="p-4 sm:p-6">
@@ -234,33 +194,24 @@ export function InvestmentRequestForm() {
             <div className="flex justify-between text-sm mb-1">
               <span className="text-muted-foreground">Current Price:</span>
               <span className="font-semibold">
-                $
-                {currentPrice.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium mb-2 block">
-            Investment Amount (USD)
-          </label>
+          <label className="text-sm font-medium mb-2 block">Investment Amount (USD)</label>
           <Input
             type="number"
             step="0.01"
-            min={MINIMUM_INVESTMENT}
+            min="0"
             max={availableBalance}
             value={investmentAmount}
             onChange={(e) => setInvestmentAmount(e.target.value)}
-            placeholder={`${MINIMUM_INVESTMENT}.00`}
+            placeholder="0.00"
             className="text-lg"
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Minimum investment: ${MINIMUM_INVESTMENT}
-          </p>
           <button
             onClick={() => setInvestmentAmount(availableBalance.toString())}
             className="text-xs text-primary mt-1 hover:underline"
@@ -283,8 +234,7 @@ export function InvestmentRequestForm() {
             </div>
             <div className="pt-2 border-t border-border">
               <p className="text-xs text-muted-foreground">
-                ⚠️ Final share count and price will be determined upon admin
-                approval
+                ⚠️ Final share count and price will be determined upon admin approval
               </p>
             </div>
           </div>
@@ -294,11 +244,7 @@ export function InvestmentRequestForm() {
           onClick={handleSubmit}
           loading={loading}
           className="w-full"
-          disabled={
-            !investmentAmount ||
-            !selectedStock ||
-            Number(investmentAmount) < MINIMUM_INVESTMENT
-          }
+          disabled={!investmentAmount || !selectedStock || Number(investmentAmount) <= 0}
         >
           <TrendingUp className="w-4 h-4 mr-2" />
           Submit Investment Request
@@ -308,11 +254,7 @@ export function InvestmentRequestForm() {
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>Available Balance:</span>
             <span className="text-foreground font-semibold">
-              $
-              {availableBalance.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              ${availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </div>
         </div>

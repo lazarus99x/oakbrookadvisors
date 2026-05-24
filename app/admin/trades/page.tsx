@@ -31,7 +31,7 @@ export default function AdminTradesPage() {
           schema: "public",
           table: "user_trades",
         },
-        () => loadTrades(),
+        () => loadTrades()
       )
       .subscribe();
 
@@ -71,32 +71,24 @@ export default function AdminTradesPage() {
             user_name: profile?.full_name || trade.user_id,
             user_email: profile?.email || "N/A",
           };
-        }),
+        })
       );
 
       setTrades(tradesWithUsers);
     } catch (error: any) {
-      console.error(
-        "Error loading trades details:",
-        JSON.stringify(error, null, 2),
-        error,
-      );
+      console.error("Error loading trades details:", JSON.stringify(error, null, 2), error);
       toast.error(error?.message || error?.details || "Failed to load trades");
     } finally {
       setFetching(false);
     }
   }
 
-  async function handleAddProfitLoss(
-    tradeId: string,
-    userId: string,
-    isLoss: boolean,
-  ) {
+  async function handleAddProfitLoss(tradeId: string, userId: string, isLoss: boolean) {
     if (!profitAmount || isNaN(Number(profitAmount))) {
       toast.error("Please enter a valid amount");
       return;
     }
-
+    
     setLoading(true);
     try {
       const amount = Number(profitAmount);
@@ -108,7 +100,7 @@ export default function AdminTradesPage() {
         .select("profit_loss, invested_amount")
         .eq("id", tradeId)
         .single();
-
+      
       const currentProfit = Number(trade?.profit_loss || 0);
       const newProfit = currentProfit + adjustment;
 
@@ -123,36 +115,31 @@ export default function AdminTradesPage() {
         .select("account_balance, balance, profit_balance")
         .eq("user_id", userId)
         .single();
-
-      const currentBalance = Number(
-        balance?.account_balance || balance?.balance || 0,
-      );
+        
+      const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
       const newBalance = currentBalance + adjustment;
       const currentProfitBalance = Number(balance?.profit_balance || 0);
       const newProfitBalance = currentProfitBalance + adjustment;
 
-      await supabase.from("user_balances").upsert(
-        {
+      await supabase
+        .from("user_balances")
+        .upsert({
           user_id: userId,
           account_balance: newBalance,
           balance: newBalance,
           profit_balance: newProfitBalance,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
+        }, { onConflict: "user_id" });
 
       // Record transaction
       await supabase.from("transactions").insert({
         user_id: userId,
         type: isLoss ? "loss" : "profit",
         amount: adjustment,
-        description: `Admin ${isLoss ? "deducted" : "added"} ${isLoss ? "profit" : "profit"} to trade: $${Math.abs(amount)}`,
+        description: `Admin added ${isLoss ? "loss" : "profit"} to trade`,
       });
 
-      toast.success(
-        `Successfully ${isLoss ? "deducted" : "added"} $${amount} ${isLoss ? "profit" : "profit"}`,
-      );
+      toast.success(`Successfully added ${isLoss ? "loss" : "profit"}`);
       setEditingTrade(null);
       setProfitAmount("");
       loadTrades();
@@ -167,7 +154,7 @@ export default function AdminTradesPage() {
   async function handleTradeAction(
     tradeId: string,
     action: "approve" | "reject",
-    reason?: string,
+    reason?: string
   ) {
     setLoading(true);
     try {
@@ -183,10 +170,7 @@ export default function AdminTradesPage() {
       if (trade.status === "ready" && trade.risk_level) {
         const invested = Number(trade.invested_amount || 0);
         // Only allow rejection for HIGH risk
-        if (
-          (trade.risk_level === "LOW" || trade.risk_level === "NORMAL") &&
-          action === "reject"
-        ) {
+        if ((trade.risk_level === "LOW" || trade.risk_level === "NORMAL") && action === "reject") {
           toast.error("Low/Normal risk trades cannot be rejected");
           setLoading(false);
           return;
@@ -199,28 +183,21 @@ export default function AdminTradesPage() {
             .eq("user_id", trade.user_id)
             .single();
           const profit = Number(trade.profit_loss);
-          const curr = Number(
-            balance?.account_balance || balance?.balance || 0,
-          );
+          const curr = Number(balance?.account_balance || balance?.balance || 0);
           const currProfitBalance = Number(balance?.profit_balance || 0);
-          await supabase.from("user_balances").upsert(
-            {
+          await supabase
+            .from("user_balances")
+            .upsert({
               user_id: trade.user_id,
               account_balance: curr + profit,
               balance: curr + profit,
               profit_balance: currProfitBalance + profit,
               updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" },
-          );
+            }, { onConflict: "user_id" });
           // Update trade status
           await supabase
             .from("user_trades")
-            .update({
-              status: "approved",
-              executed_at: new Date().toISOString(),
-              approved_at: new Date().toISOString(),
-            })
+            .update({ status: "approved", executed_at: new Date().toISOString(), approved_at: new Date().toISOString() })
             .eq("id", tradeId);
           toast.success("Profit approved and paid to user.");
         } else if (action === "reject" && trade.risk_level === "HIGH") {
@@ -230,10 +207,9 @@ export default function AdminTradesPage() {
             .update({
               status: "rejected",
               profit_loss: -invested,
-              rejection_reason:
-                reason || "Rejected by admin (high risk session)",
+              rejection_reason: reason || "Rejected by admin (high risk session)",
               approved_at: new Date().toISOString(),
-              executed_at: new Date().toISOString(),
+              executed_at: new Date().toISOString()
             })
             .eq("id", tradeId);
           toast.success("AI trade rejected: full loss applied.");
@@ -249,47 +225,29 @@ export default function AdminTradesPage() {
         if (trade.trade_type === "BUY") {
           const { data: balance } = await supabase
             .from("user_balances")
-            .select("account_balance, profit_balance, balance")
+            .select("account_balance, balance")
             .eq("user_id", trade.user_id)
             .single();
 
-          const acctBal = Number(balance?.account_balance || 0);
-          const profitBal = Number(balance?.profit_balance || 0);
-          // Use TRUE total balance (account + profit) for the check
-          const totalAvailable =
-            acctBal + profitBal || Number(balance?.balance || 0);
+          const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
           const totalCost = Number(trade.total_value) * 1.001; // Including fee
 
-          if (totalAvailable < totalCost) {
-            toast.error(
-              `User has insufficient balance ($${totalAvailable.toFixed(2)} available, $${totalCost.toFixed(2)} needed)`,
-            );
+          if (currentBalance < totalCost) {
+            toast.error("User has insufficient balance");
             setLoading(false);
             return;
           }
 
-          // Deduct from account_balance first, then profit_balance if needed
-          let remaining = totalCost;
-          let newAcct = acctBal;
-          let newProfit = profitBal;
-          if (acctBal >= remaining) {
-            newAcct = acctBal - remaining;
-          } else {
-            remaining -= acctBal;
-            newAcct = 0;
-            newProfit = profitBal - remaining;
-          }
-
-          await supabase.from("user_balances").upsert(
-            {
+          // Deduct from balance
+          const newBalance = currentBalance - totalCost;
+          await supabase
+            .from("user_balances")
+            .upsert({
               user_id: trade.user_id,
-              account_balance: newAcct,
-              profit_balance: newProfit,
-              balance: newAcct + newProfit,
+              account_balance: newBalance,
+              balance: newBalance,
               updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" },
-          );
+            }, { onConflict: "user_id" });
 
           // Add to holdings
           const { data: existingHolding } = await supabase
@@ -297,14 +255,12 @@ export default function AdminTradesPage() {
             .select("*")
             .eq("user_id", trade.user_id)
             .eq("symbol", trade.symbol)
-            .maybeSingle();
+            .single();
 
           if (existingHolding) {
-            const newAmount =
-              Number(existingHolding.amount) + Number(trade.amount);
+            const newAmount = Number(existingHolding.amount) + Number(trade.amount);
             const newAvgPrice =
-              (Number(existingHolding.average_buy_price || 0) *
-                Number(existingHolding.amount) +
+              (Number(existingHolding.average_buy_price || 0) * Number(existingHolding.amount) +
                 Number(trade.price) * Number(trade.amount)) /
               newAmount;
 
@@ -313,9 +269,7 @@ export default function AdminTradesPage() {
               .update({
                 amount: newAmount,
                 average_buy_price: newAvgPrice,
-                total_invested:
-                  Number(existingHolding.total_invested || 0) +
-                  Number(trade.total_value),
+                total_invested: Number(existingHolding.total_invested) + Number(trade.total_value),
                 last_updated: new Date().toISOString(),
               })
               .eq("id", existingHolding.id);
@@ -346,7 +300,7 @@ export default function AdminTradesPage() {
             .select("*")
             .eq("user_id", trade.user_id)
             .eq("symbol", trade.symbol)
-            .maybeSingle();
+            .single();
 
           if (!holding || Number(holding.amount) < Number(trade.amount)) {
             toast.error("User has insufficient holdings");
@@ -370,28 +324,24 @@ export default function AdminTradesPage() {
             await supabase.from("user_holdings").delete().eq("id", holding.id);
           }
 
-          // Add sell proceeds back to account_balance
+          // Add to balance
           const { data: balance } = await supabase
             .from("user_balances")
-            .select("account_balance, profit_balance, balance")
+            .select("account_balance, balance")
             .eq("user_id", trade.user_id)
             .single();
 
-          const currentAcct = Number(balance?.account_balance || 0);
-          const currentProfit = Number(balance?.profit_balance || 0);
-          const newAcct = currentAcct + sellValue;
-          const newTotal = newAcct + currentProfit;
+          const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
+          const newBalance = currentBalance + sellValue;
 
-          await supabase.from("user_balances").upsert(
-            {
+          await supabase
+            .from("user_balances")
+            .upsert({
               user_id: trade.user_id,
-              account_balance: newAcct,
-              profit_balance: currentProfit,
-              balance: newTotal,
+              account_balance: newBalance,
+              balance: newBalance,
               updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" },
-          );
+            }, { onConflict: "user_id" });
 
           // Create transaction record
           await supabase.from("transactions").insert({
@@ -402,27 +352,18 @@ export default function AdminTradesPage() {
           });
 
           // Calculate profit/loss
-          const profit =
-            sellValue -
-            Number(holding.average_buy_price) * Number(trade.amount);
-
+          const profit = sellValue - (Number(holding.average_buy_price) * Number(trade.amount));
+          
           if (profit > 0) {
-            await supabase
-              .from("profit_records")
-              .insert({
-                user_id: trade.user_id,
-                trade_id: tradeId,
-                symbol: trade.symbol,
-                profit_amount: profit,
-                profit_percentage:
-                  (profit /
-                    (Number(holding.average_buy_price) *
-                      Number(trade.amount))) *
-                  100,
-                status: "pending",
-              })
-              .then(() => {})
-              .catch(() => {}); // non-fatal
+            // Create profit record for admin approval
+            await supabase.from("profit_records").insert({
+              user_id: trade.user_id,
+              trade_id: tradeId,
+              symbol: trade.symbol,
+              profit_amount: profit,
+              profit_percentage: (profit / (Number(holding.average_buy_price) * Number(trade.amount))) * 100,
+              status: "pending",
+            });
           }
 
           toast.success("Sell order approved and balance updated");
@@ -468,21 +409,17 @@ export default function AdminTradesPage() {
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl">
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-          Trade Management
-        </h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Trade Management</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Review and approve user trades
         </p>
       </div>
 
-      <Tabs
-        value={filterStatus}
-        onValueChange={setFilterStatus}
-        className="mb-6"
-      >
+      <Tabs value={filterStatus} onValueChange={setFilterStatus} className="mb-6">
         <TabsList className="grid w-full max-w-md grid-cols-4">
-          <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending ({pendingCount})
+          </TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
           <TabsTrigger value="all">All</TabsTrigger>
@@ -508,12 +445,11 @@ export default function AdminTradesPage() {
                     </span>
                     <span
                       className={`text-xs px-2 py-1 rounded ${
-                        trade.status === "approved" ||
-                        trade.status === "completed"
+                        trade.status === "approved" || trade.status === "completed"
                           ? "bg-green-500/20 text-green-500"
                           : trade.status === "rejected"
-                            ? "bg-red-500/20 text-red-500"
-                            : "bg-yellow-500/20 text-yellow-500"
+                          ? "bg-red-500/20 text-red-500"
+                          : "bg-yellow-500/20 text-yellow-500"
                       }`}
                     >
                       {trade.status.toUpperCase()}
@@ -523,13 +459,11 @@ export default function AdminTradesPage() {
                     User: {trade.user_name} ({trade.user_email})
                   </p>
                   <p className="text-sm text-muted-foreground mb-1">
-                    Price: ${Number(trade.price).toFixed(2)} | Total: $
-                    {Number(trade.total_value).toFixed(2)}
+                    Price: ${Number(trade.price).toFixed(2)} | Total: ${Number(trade.total_value).toFixed(2)}
                   </p>
                   <p className="text-sm text-muted-foreground mb-1">
                     Order Type: {trade.order_type}
-                    {trade.limit_price &&
-                      ` | Limit: $${Number(trade.limit_price).toFixed(2)}`}
+                    {trade.limit_price && ` | Limit: $${Number(trade.limit_price).toFixed(2)}`}
                   </p>
                   <p className="text-xs text-muted-foreground mb-1">
                     {new Date(trade.created_at).toLocaleString()}
@@ -542,33 +476,14 @@ export default function AdminTradesPage() {
                   {/* Risk block for AI trades */}
                   {trade.risk_level && (
                     <div className="text-sm mb-1 flex flex-wrap gap-2 items-center">
-                      <span
-                        className={`inline-block px-2 py-1 rounded-full text-white ${trade.risk_level === "HIGH" ? "bg-red-600" : trade.risk_level === "NORMAL" ? "bg-yellow-500" : "bg-green-500"}`}
-                      >
+                      <span className={`inline-block px-2 py-1 rounded-full text-white ${trade.risk_level === 'HIGH' ? 'bg-red-600' : trade.risk_level === 'NORMAL' ? 'bg-yellow-500' : 'bg-green-500'}`}>
                         {trade.risk_level} risk
                       </span>
                       <span>Invested: ${trade.invested_amount}</span>
                       <span>ROI: {trade.roi}%</span>
-                      <span>
-                        Profit/Loss:{" "}
-                        <b
-                          className={
-                            Number(trade.profit_loss) < 0
-                              ? "text-red-500"
-                              : "text-green-500"
-                          }
-                        >
-                          {Number(trade.profit_loss) >= 0 ? "+" : ""}
-                          {trade.profit_loss}
-                        </b>
-                      </span>
+                      <span>Profit/Loss: <b className={Number(trade.profit_loss) < 0 ? 'text-red-500' : 'text-green-500'}>{Number(trade.profit_loss) >= 0 ? '+' : ''}{trade.profit_loss}</b></span>
                       {trade.admin_must_approve !== undefined && (
-                        <span className="bg-gray-800 px-2 py-1 rounded text-xs ml-2">
-                          Approval control:{" "}
-                          {trade.admin_must_approve
-                            ? "Admin must decide"
-                            : "Auto-approve"}
-                        </span>
+                        <span className="bg-gray-800 px-2 py-1 rounded text-xs ml-2">Approval control: {trade.admin_must_approve ? 'Admin must decide' : 'Auto-approve'}</span>
                       )}
                     </div>
                   )}
@@ -638,26 +553,18 @@ export default function AdminTradesPage() {
                         />
                         <div className="flex gap-2">
                           <LoadingButton
-                            onClick={() =>
-                              handleAddProfitLoss(
-                                trade.id,
-                                trade.user_id,
-                                false,
-                              )
-                            }
+                            onClick={() => handleAddProfitLoss(trade.id, trade.user_id, false)}
                             loading={loading}
                             className="flex-1 bg-green-600 hover:bg-green-700 h-8 text-xs"
                           >
                             Add Profit
                           </LoadingButton>
                           <LoadingButton
-                            onClick={() =>
-                              handleAddProfitLoss(trade.id, trade.user_id, true)
-                            }
+                            onClick={() => handleAddProfitLoss(trade.id, trade.user_id, true)}
                             loading={loading}
                             className="flex-1 bg-red-600 hover:bg-red-700 h-8 text-xs"
                           >
-                            Deduct Profit
+                            Add Loss
                           </LoadingButton>
                         </div>
                         <Button
@@ -670,9 +577,9 @@ export default function AdminTradesPage() {
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        onClick={() => setEditingTrade(trade.id)}
-                        variant="outline"
+                      <Button 
+                        onClick={() => setEditingTrade(trade.id)} 
+                        variant="outline" 
                         size="sm"
                       >
                         <DollarSign className="w-4 h-4 mr-2" />

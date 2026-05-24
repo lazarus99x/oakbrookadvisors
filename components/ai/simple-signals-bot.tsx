@@ -46,7 +46,7 @@ export function SimpleSignalsBot() {
           return arr.slice(-40);
         });
       },
-      energetic ? 150 : 500,
+      energetic ? 150 : 500
     );
     setSparkTicker(t);
     return () => clearInterval(t);
@@ -58,7 +58,7 @@ export function SimpleSignalsBot() {
     const timer = setInterval(() => {
       const left = Math.max(
         0,
-        Math.floor((new Date(sessionEndsAt).getTime() - Date.now()) / 1000),
+        Math.floor((new Date(sessionEndsAt).getTime() - Date.now()) / 1000)
       );
       setSessionLeft(left);
       if (left <= 0) {
@@ -130,19 +130,17 @@ export function SimpleSignalsBot() {
       await supabase.from("user_trades").insert({
         user_id: user.id,
         symbol: "BTC/USD",
-        trade_type: pl >= 0 ? "BUY" : "SELL",
-        amount: 0,
+        side: pl >= 0 ? "BUY" : "SELL",
         price: 0,
-        total_value: amount,
         status: "ready",
         profit_loss: pl,
-        admin_notes: `AI bot session completed. Risk: ${risk}. Invested: $${amount}. ROI: ${Math.abs(Math.round(roi * 100))}%. Approval required: ${!mustApprove ? "Admin must decide" : "Must approve"}`,
+        description: `AI bot session completed. Risk: ${risk}. Invested: $${amount}. ROI: ${Math.abs(Math.round(roi * 100))}%. Approval required: ${!mustApprove ? "Admin must decide" : "Must approve"}`,
         risk_level: risk,
         invested_amount: amount,
         roi: Math.abs(Math.round(roi * 100)),
         admin_must_approve: !mustApprove,
       });
-      toast.success("AI trading session completed. Processing trade...");
+      toast.success("AI session completed. Trade ready for admin approval.");
     } catch (e) {
       console.error(e);
     }
@@ -162,7 +160,7 @@ export function SimpleSignalsBot() {
           table: "trading_signals",
           filter: "active=eq.true",
         },
-        () => loadSignals(),
+        () => loadSignals()
       )
       .subscribe();
 
@@ -202,14 +200,10 @@ export function SimpleSignalsBot() {
     if (!user?.id) return 0;
     const { data } = await supabase
       .from("user_balances")
-      .select("account_balance, profit_balance, balance")
+      .select("account_balance, balance")
       .eq("user_id", user.id)
       .maybeSingle();
-    // Return true total: account_balance + profit_balance
-    return (
-      (Number(data?.account_balance || 0) + Number(data?.profit_balance || 0)) ||
-      Number(data?.balance || 0)
-    );
+    return data?.account_balance ?? data?.balance ?? 0;
   }
 
   function addDuration(base: Date, duration: string): string {
@@ -363,6 +357,7 @@ export function SimpleSignalsBot() {
         price: foundPrice,
         total_value,
         status: "pending",
+        signal_id: signal.id,
       });
       if (error) throw error;
 
@@ -618,7 +613,7 @@ export function SimpleSignalsBot() {
         </div>
         <ul className="list-disc pl-5 text-sm space-y-1">
           <li>
-            Minimum deposit to start: <span className="font-medium">$500</span>
+            Minimum deposit to start: <span className="font-medium">$100</span>
           </li>
           <li>
             Choose <b>Risk Level</b>:

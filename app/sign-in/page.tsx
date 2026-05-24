@@ -14,7 +14,6 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -37,35 +36,13 @@ export default function SignInPage() {
     router.push("/post-auth");
   };
 
-  const handleForgotPassword = async () => {
-    if (!email.trim()) {
-      toast.error("Enter your email address first");
-      return;
-    }
-
-    setResetLoading(true);
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      setResetLoading(false);
-      return;
-    }
-
-    toast.success("Password reset email sent. Check your inbox.");
-    setResetLoading(false);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <Card className="w-full max-w-md p-8 bg-card border-border relative z-10">
         <div className="text-center mb-8">
-          <img src="/leverfi.png" alt="OakbrookAdvisors" className="w-12 h-12 mx-auto mb-4" />
+          <img src="/leverfi.png" alt="TradeWiseTab" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-foreground">Welcome Back</h1>
-          <p className="text-muted-foreground mt-2">Sign in to your OakbrookAdvisors account</p>
+          <p className="text-muted-foreground mt-2">Sign in to your TradeWiseTab account</p>
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
@@ -98,17 +75,6 @@ export default function SignInPage() {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              disabled={resetLoading}
-              className="text-sm text-[#00FE01] hover:underline disabled:opacity-60"
-            >
-              {resetLoading ? "Sending reset link..." : "Forgot password?"}
-            </button>
-          </div>
-
           <Button type="submit" className="w-full bg-[#00FE01] hover:bg-[#B4FE01] text-black" disabled={loading}>
             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
             Sign In
@@ -125,4 +91,3 @@ export default function SignInPage() {
     </div>
   );
 }
-

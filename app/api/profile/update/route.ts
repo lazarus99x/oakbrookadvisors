@@ -30,15 +30,8 @@ export async function PATCH(request: Request) {
 
     const { data, error } = await admin
       .from("profiles")
-      .upsert(
-        {
-          user_id: userId,
-          ...updateData,
-        },
-        {
-          onConflict: "user_id",
-        }
-      )
+      .update(updateData)
+      .eq("user_id", userId)
       .select()
       .single();
 
@@ -58,3 +51,4 @@ export async function PATCH(request: Request) {
     );
   }
 }
+

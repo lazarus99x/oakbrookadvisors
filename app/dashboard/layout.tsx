@@ -18,13 +18,6 @@ export default function DashboardLayout({
     setOpen(false);
   }, [pathname]);
 
-  // Self-heal storage buckets on dashboard load
-  useEffect(() => {
-    fetch("/api/setup-buckets").catch((err) => {
-      console.warn("Failed to automatically setup buckets:", err);
-    });
-  }, []);
-
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
