@@ -202,10 +202,14 @@ export function SimpleSignalsBot() {
     if (!user?.id) return 0;
     const { data } = await supabase
       .from("user_balances")
-      .select("account_balance, balance")
+      .select("account_balance, profit_balance, balance")
       .eq("user_id", user.id)
       .maybeSingle();
-    return data?.account_balance ?? data?.balance ?? 0;
+    // Return true total: account_balance + profit_balance
+    return (
+      (Number(data?.account_balance || 0) + Number(data?.profit_balance || 0)) ||
+      Number(data?.balance || 0)
+    );
   }
 
   function addDuration(base: Date, duration: string): string {

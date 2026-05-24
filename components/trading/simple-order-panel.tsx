@@ -84,12 +84,16 @@ export function SimpleOrderPanel({ asset }: SimpleOrderPanelProps) {
     if (!user?.id) return;
     const { data } = await supabase
       .from("user_balances")
-      .select("account_balance, balance")
+      .select("account_balance, profit_balance, balance")
       .eq("user_id", user.id)
       .single();
 
     if (data) {
-      setBalance(Number(data.account_balance || data.balance || 0));
+      // Use total of account_balance + profit_balance as the full available balance
+      const total =
+        Number(data.account_balance || 0) + Number(data.profit_balance || 0) ||
+        Number(data.balance || 0);
+      setBalance(total);
     }
   }
 
@@ -150,12 +154,33 @@ export function SimpleOrderPanel({ asset }: SimpleOrderPanelProps) {
       if (tradeError) throw tradeError;
 
       if (type === "BUY") {
-        const newBalance = balance - totalCost;
+        // Fetch current split so we deduct from account_balance first, then profit_balance
+        const { data: currentBal } = await supabase
+          .from("user_balances")
+          .select("account_balance, profit_balance")
+          .eq("user_id", user.id)
+          .single();
+
+        const acct = Number(currentBal?.account_balance || 0);
+        const profit = Number(currentBal?.profit_balance || 0);
+        let remaining = totalCost;
+        let newAcct = acct;
+        let newProfit = profit;
+
+        if (acct >= remaining) {
+          newAcct = acct - remaining;
+        } else {
+          // Deduct what we can from account_balance, rest from profit_balance
+          remaining -= acct;
+          newAcct = 0;
+          newProfit = profit - remaining;
+        }
+
         await supabase
           .from("user_balances")
-          .update({ account_balance: newBalance })
+          .update({ account_balance: newAcct, profit_balance: newProfit, balance: newAcct + newProfit })
           .eq("user_id", user.id);
-          
+
         await supabase.from("transactions").insert({
           user_id: user.id,
           type: "trade",

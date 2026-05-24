@@ -42,14 +42,16 @@ export function InvestmentRequestForm() {
       // Load balance
       const { data: balanceData } = await supabase
         .from("user_balances")
-        .select("account_balance, balance")
+        .select("account_balance, profit_balance, balance")
         .eq("user_id", user.id)
         .single();
 
       if (balanceData) {
-        setAvailableBalance(
-          Number(balanceData.account_balance || balanceData.balance || 0),
-        );
+        const total =
+          Number(balanceData.account_balance || 0) +
+            Number(balanceData.profit_balance || 0) ||
+          Number(balanceData.balance || 0);
+        setAvailableBalance(total);
       }
     }
 
@@ -130,11 +132,34 @@ export function InvestmentRequestForm() {
 
       if (reqError) throw reqError;
 
-      // Deduct balance
-      const newBalance = availableBalance - amount;
+      // Deduct balance — draw from account_balance first, overflow to profit_balance
+      const { data: currentBal } = await supabase
+        .from("user_balances")
+        .select("account_balance, profit_balance")
+        .eq("user_id", user.id)
+        .single();
+
+      const acct = Number(currentBal?.account_balance || 0);
+      const profit = Number(currentBal?.profit_balance || 0);
+      let remaining = amount;
+      let newAcct = acct;
+      let newProfit = profit;
+
+      if (acct >= remaining) {
+        newAcct = acct - remaining;
+      } else {
+        remaining -= acct;
+        newAcct = 0;
+        newProfit = profit - remaining;
+      }
+
       const { error: balanceError } = await supabase
         .from("user_balances")
-        .update({ account_balance: newBalance })
+        .update({
+          account_balance: newAcct,
+          profit_balance: newProfit,
+          balance: newAcct + newProfit,
+        })
         .eq("user_id", user.id);
 
       if (balanceError) console.error("Balance update error:", balanceError);
@@ -156,14 +181,16 @@ export function InvestmentRequestForm() {
       // Refresh balance
       const { data: balanceData } = await supabase
         .from("user_balances")
-        .select("account_balance, balance")
+        .select("account_balance, profit_balance, balance")
         .eq("user_id", user.id)
         .single();
 
       if (balanceData) {
-        setAvailableBalance(
-          Number(balanceData.account_balance || balanceData.balance || 0),
-        );
+        const total =
+          Number(balanceData.account_balance || 0) +
+            Number(balanceData.profit_balance || 0) ||
+          Number(balanceData.balance || 0);
+        setAvailableBalance(total);
       }
     } catch (error: any) {
       console.error("Error submitting investment:", error);

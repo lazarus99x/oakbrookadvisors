@@ -332,7 +332,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Total Balance
+                      Account Balance
                     </p>
                     <p className="text-2xl font-bold text-[#00FE01] mt-1">
                       {loading ? (
