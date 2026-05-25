@@ -49,7 +49,9 @@ export default function AdminTradesPage() {
         .order("created_at", { ascending: false })
         .limit(100);
 
-      if (filterStatus !== "all") {
+      if (filterStatus === "ai") {
+        query = query.eq("status", "ready");
+      } else if (filterStatus !== "all") {
         query = query.eq("status", filterStatus);
       }
 
@@ -112,11 +114,12 @@ export default function AdminTradesPage() {
       // Update user balance
       const { data: balance } = await supabase
         .from("user_balances")
-        .select("account_balance, balance, profit_balance")
+        .select("account_balance, trading_balance, profit_balance")
         .eq("user_id", userId)
         .single();
         
-      const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
+      const currentBalance = Number(balance?.account_balance || 0);
+      const currentTrading = Number(balance?.trading_balance || 0);
       const newBalance = currentBalance + adjustment;
       const currentProfitBalance = Number(balance?.profit_balance || 0);
       const newProfitBalance = currentProfitBalance + adjustment;
@@ -126,8 +129,9 @@ export default function AdminTradesPage() {
         .upsert({
           user_id: userId,
           account_balance: newBalance,
-          balance: newBalance,
+          trading_balance: currentTrading,
           profit_balance: newProfitBalance,
+          balance: newBalance + currentTrading + newProfitBalance,
           updated_at: new Date().toISOString(),
         }, { onConflict: "user_id" });
 
@@ -179,19 +183,21 @@ export default function AdminTradesPage() {
           // Credit profit to user
           const { data: balance } = await supabase
             .from("user_balances")
-            .select("account_balance, balance, profit_balance")
+            .select("account_balance, trading_balance, profit_balance")
             .eq("user_id", trade.user_id)
             .single();
           const profit = Number(trade.profit_loss);
-          const curr = Number(balance?.account_balance || balance?.balance || 0);
+          const curr = Number(balance?.account_balance || 0);
+          const currTrading = Number(balance?.trading_balance || 0);
           const currProfitBalance = Number(balance?.profit_balance || 0);
           await supabase
             .from("user_balances")
             .upsert({
               user_id: trade.user_id,
               account_balance: curr + profit,
-              balance: curr + profit,
+              trading_balance: currTrading,
               profit_balance: currProfitBalance + profit,
+              balance: (curr + profit) + currTrading + (currProfitBalance + profit),
               updated_at: new Date().toISOString(),
             }, { onConflict: "user_id" });
           // Update trade status
@@ -201,6 +207,23 @@ export default function AdminTradesPage() {
             .eq("id", tradeId);
           toast.success("Profit approved and paid to user.");
         } else if (action === "reject" && trade.risk_level === "HIGH") {
+          // Deduct the invested amount as a loss
+          const { data: balance } = await supabase
+            .from("user_balances")
+            .select("account_balance, trading_balance, balance")
+            .eq("user_id", trade.user_id)
+            .single();
+          const currBal = Number(balance?.account_balance || 0);
+          const currTrading = Number(balance?.trading_balance || 0);
+          await supabase
+            .from("user_balances")
+            .upsert({
+              user_id: trade.user_id,
+              account_balance: Math.max(0, currBal - invested),
+              trading_balance: currTrading,
+              balance: Math.max(0, currBal - invested) + currTrading,
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "user_id" });
           // Set profit_loss to -invested_amount (full loss)
           await supabase
             .from("user_trades")
@@ -231,8 +254,7 @@ export default function AdminTradesPage() {
 
           const accountBal = Number(balance?.account_balance || 0);
           const tradingBal = Number(balance?.trading_balance || 0);
-          // For AI trades, check total available; for regular, check account only
-          const availableBal = trade.signal_id ? accountBal + tradingBal : accountBal;
+          const availableBal = accountBal + tradingBal;
           const totalCost = Number(trade.total_value) * 1.001; // Including fee
 
           if (availableBal < totalCost) {
@@ -242,8 +264,6 @@ export default function AdminTradesPage() {
           }
 
           // Deduct from account_balance, add to trading_balance
-          const deductionFromAccount = Math.min(totalCost, accountBal);
-          const remainderFromTrading = totalCost - deductionFromAccount;
           const newAccountBal = accountBal - totalCost;
           const newTradingBal = tradingBal + totalCost;
           await supabase
@@ -424,6 +444,7 @@ export default function AdminTradesPage() {
   }
 
   const pendingCount = trades.filter((t) => t.status === "pending").length;
+  const aiPendingCount = trades.filter((t) => t.status === "ready").length;
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-7xl">
@@ -435,9 +456,12 @@ export default function AdminTradesPage() {
       </div>
 
       <Tabs value={filterStatus} onValueChange={setFilterStatus} className="mb-6">
-        <TabsList className="grid w-full max-w-md grid-cols-4">
+        <TabsList className="grid w-full max-w-lg grid-cols-5">
           <TabsTrigger value="pending">
             Pending ({pendingCount})
+          </TabsTrigger>
+          <TabsTrigger value="ai">
+            AI Trades ({aiPendingCount})
           </TabsTrigger>
           <TabsTrigger value="approved">Approved</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
