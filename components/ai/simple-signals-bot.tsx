@@ -384,7 +384,7 @@ export function SimpleSignalsBot() {
 
       toast.success("Trade order created and sent to admin for approval.");
     } catch (error) {
-      toast.error("Failed to create trade. Try again.");
+      console.error("submitTrade error:", error);
     }
     setLoading(false);
   }

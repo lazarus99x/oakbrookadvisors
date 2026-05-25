@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, Users, Settings, LogOut, Shield, ArrowDownCircle, ArrowUpCircle, TrendingUp, Building2, DollarSign, FileCheck } from "lucide-react";
+import { BarChart3, Users, Settings, LogOut, Shield, ArrowDownCircle, ArrowUpCircle, TrendingUp, DollarSign, FileCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClerk } from "@/lib/auth";
 
@@ -12,11 +12,6 @@ export function AdminSidebar() {
     { href: "/admin/users", label: "Users", icon: Users },
     { href: "/admin/kyc", label: "KYC Management", icon: FileCheck },
     { href: "/admin/funding", label: "Funding", icon: BarChart3 },
-    {
-      href: "/admin/fund-management",
-      label: "Fund Management",
-      icon: Settings,
-    },
     { href: "/admin/deposits", label: "Deposits", icon: ArrowDownCircle },
     { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpCircle },
     { href: "/admin/trades", label: "Trades", icon: TrendingUp },

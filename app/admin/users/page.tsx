@@ -335,27 +335,27 @@ export default function AdminUsersPage() {
   const isSuspended = selectedUser?.publicMetadata?.suspended === true;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">User Management</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
           Manage users, balances, and transactions
         </p>
       </div>
 
       <Tabs id="admin-users-tabs" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="users">Users & Actions</TabsTrigger>
-          <TabsTrigger value="balances">Balance Management</TabsTrigger>
+          <TabsTrigger value="users" className="text-xs sm:text-sm">Users & Actions</TabsTrigger>
+          <TabsTrigger value="balances" className="text-xs sm:text-sm">Balance Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* User Search */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Search className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Find User</h2>
+                <Search className="w-5 h-5 shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">Find User</h2>
               </div>
 
               <div className="space-y-4">
@@ -365,16 +365,16 @@ export default function AdminUsersPage() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
 
-                <div className="max-h-96 overflow-y-auto space-y-2">
+                <div className="max-h-64 sm:max-h-96 overflow-y-auto space-y-2">
                   {loading ? (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
                       Loading users...
                     </div>
                   ) : filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
                       <div
                         key={user.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        className={`p-2 sm:p-3 border rounded-lg cursor-pointer transition-colors ${
                           selectedUser?.id === user.id
                             ? "border-[#00FE01] bg-[#00FE01]/5"
                             : "hover:bg-muted"
@@ -382,28 +382,28 @@ export default function AdminUsersPage() {
                         onClick={() => setSelectedUser(user)}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="font-medium">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm sm:text-base truncate">
                               {user.firstName && user.lastName
                                 ? `${user.firstName} ${user.lastName}`
                                 : user.firstName || user.lastName || "No name"}
                             </p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs sm:text-sm text-muted-foreground truncate">
                               {user.emailAddresses[0]?.emailAddress ||
                                 "No email"}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">
                               ID: {user.id.slice(0, 12)}...
                             </p>
                           </div>
                           {user.publicMetadata?.suspended && (
-                            <Ban className="w-4 h-4 text-red-500" />
+                            <Ban className="w-4 h-4 text-red-500 shrink-0 ml-2" />
                           )}
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-muted-foreground">
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
                       No users found
                     </div>
                   )}
@@ -412,27 +412,27 @@ export default function AdminUsersPage() {
             </Card>
 
             {/* User Details & Actions */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">User Details</h2>
+                <Users className="w-5 h-5 shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">User Details</h2>
               </div>
 
               {selectedUser ? (
                 <div className="space-y-4">
                   <div className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium">
+                    <p className="font-medium text-sm sm:text-base">
                       {selectedUser.firstName && selectedUser.lastName
                         ? `${selectedUser.firstName} ${selectedUser.lastName}`
                         : selectedUser.firstName ||
                           selectedUser.lastName ||
                           "No name"}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       {selectedUser.emailAddresses[0]?.emailAddress ||
                         "No email"}
                     </p>
-                    <p className="text-xs text-blue-500 mt-1">
+                    <p className="text-xs text-blue-500 mt-1 truncate">
                       Clerk ID: {selectedUser.id}
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -643,13 +643,13 @@ export default function AdminUsersPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="balances" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="balances" className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* User Selector */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <Search className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Select User</h2>
+                <Search className="w-5 h-5 shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">Select User</h2>
               </div>
               <div className="space-y-4">
                 <Input
@@ -657,23 +657,23 @@ export default function AdminUsersPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <div className="max-h-64 overflow-y-auto space-y-2">
+                <div className="max-h-48 sm:max-h-64 overflow-y-auto space-y-2">
                   {filteredUsers.map((user) => (
                     <div
                       key={user.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                      className={`p-2 sm:p-3 border rounded-lg cursor-pointer transition-colors ${
                         selectedUser?.id === user.id
                           ? "border-[#00FE01] bg-[#00FE01]/5"
                           : "hover:bg-muted"
                       }`}
                       onClick={() => setSelectedUser(user)}
                     >
-                      <p className="font-medium">
+                      <p className="font-medium text-sm sm:text-base truncate">
                         {user.firstName && user.lastName
                           ? `${user.firstName} ${user.lastName}`
                           : user.firstName || user.lastName || "No name"}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">
                         {user.emailAddresses[0]?.emailAddress || "No email"}
                       </p>
                     </div>
@@ -683,10 +683,10 @@ export default function AdminUsersPage() {
             </Card>
 
             {/* Transaction Form */}
-            <Card className="p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-2 mb-4">
-                <DollarSign className="w-5 h-5" />
-                <h2 className="text-xl font-semibold">Apply Transaction</h2>
+                <DollarSign className="w-5 h-5 shrink-0" />
+                <h2 className="text-lg sm:text-xl font-semibold">Apply Transaction</h2>
               </div>
 
               {selectedUser ? (
