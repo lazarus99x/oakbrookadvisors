@@ -225,27 +225,34 @@ export default function AdminTradesPage() {
         if (trade.trade_type === "BUY") {
           const { data: balance } = await supabase
             .from("user_balances")
-            .select("account_balance, balance")
+            .select("account_balance, trading_balance, balance")
             .eq("user_id", trade.user_id)
             .single();
 
-          const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
+          const accountBal = Number(balance?.account_balance || 0);
+          const tradingBal = Number(balance?.trading_balance || 0);
+          // For AI trades, check total available; for regular, check account only
+          const availableBal = trade.signal_id ? accountBal + tradingBal : accountBal;
           const totalCost = Number(trade.total_value) * 1.001; // Including fee
 
-          if (currentBalance < totalCost) {
+          if (availableBal < totalCost) {
             toast.error("User has insufficient balance");
             setLoading(false);
             return;
           }
 
-          // Deduct from balance
-          const newBalance = currentBalance - totalCost;
+          // Deduct from account_balance, add to trading_balance
+          const deductionFromAccount = Math.min(totalCost, accountBal);
+          const remainderFromTrading = totalCost - deductionFromAccount;
+          const newAccountBal = accountBal - totalCost;
+          const newTradingBal = tradingBal + totalCost;
           await supabase
             .from("user_balances")
             .upsert({
               user_id: trade.user_id,
-              account_balance: newBalance,
-              balance: newBalance,
+              account_balance: newAccountBal,
+              trading_balance: newTradingBal,
+              balance: newAccountBal + newTradingBal,
               updated_at: new Date().toISOString(),
             }, { onConflict: "user_id" });
 
@@ -294,52 +301,64 @@ export default function AdminTradesPage() {
 
           toast.success("Trade approved and balance updated");
         } else {
-          // SELL order - check holdings
-          const { data: holding } = await supabase
-            .from("user_holdings")
-            .select("*")
-            .eq("user_id", trade.user_id)
-            .eq("symbol", trade.symbol)
-            .single();
+          // SELL order - check holdings (skip for AI trades with signal_id)
+          let sellValue, holdingsAdjusted = false;
 
-          if (!holding || Number(holding.amount) < Number(trade.amount)) {
-            toast.error("User has insufficient holdings");
-            setLoading(false);
-            return;
-          }
-
-          // Update holdings
-          const newAmount = Number(holding.amount) - Number(trade.amount);
-          const sellValue = Number(trade.total_value) * 0.999; // After fee
-
-          if (newAmount > 0) {
-            await supabase
-              .from("user_holdings")
-              .update({
-                amount: newAmount,
-                last_updated: new Date().toISOString(),
-              })
-              .eq("id", holding.id);
+          if (trade.signal_id) {
+            // AI trade - no holdings check, just credit the trading balance
+            sellValue = Number(trade.total_value) * 0.999;
+            holdingsAdjusted = true;
           } else {
-            await supabase.from("user_holdings").delete().eq("id", holding.id);
+            const { data: holding } = await supabase
+              .from("user_holdings")
+              .select("*")
+              .eq("user_id", trade.user_id)
+              .eq("symbol", trade.symbol)
+              .maybeSingle();
+
+            if (!holding || Number(holding.amount) < Number(trade.amount)) {
+              toast.error("User has insufficient holdings");
+              setLoading(false);
+              return;
+            }
+
+            // Update holdings
+            const newAmount = Number(holding.amount) - Number(trade.amount);
+            sellValue = Number(trade.total_value) * 0.999; // After fee
+
+            if (newAmount > 0) {
+              await supabase
+                .from("user_holdings")
+                .update({
+                  amount: newAmount,
+                  last_updated: new Date().toISOString(),
+                })
+                .eq("id", holding.id);
+            } else {
+              await supabase.from("user_holdings").delete().eq("id", holding.id);
+            }
+            holdingsAdjusted = true;
           }
 
-          // Add to balance
+          // Move from trading_balance to account_balance
           const { data: balance } = await supabase
             .from("user_balances")
-            .select("account_balance, balance")
+            .select("account_balance, trading_balance, balance")
             .eq("user_id", trade.user_id)
             .single();
 
-          const currentBalance = Number(balance?.account_balance || balance?.balance || 0);
-          const newBalance = currentBalance + sellValue;
+          const currentBalance = Number(balance?.account_balance || 0);
+          const currentTrading = Number(balance?.trading_balance || 0);
+          const newAccountBal = currentBalance + sellValue;
+          const newTradingBal = Math.max(0, currentTrading - (holdingsAdjusted ? sellValue : 0));
 
           await supabase
             .from("user_balances")
             .upsert({
               user_id: trade.user_id,
-              account_balance: newBalance,
-              balance: newBalance,
+              account_balance: newAccountBal,
+              trading_balance: newTradingBal,
+              balance: newAccountBal + newTradingBal,
               updated_at: new Date().toISOString(),
             }, { onConflict: "user_id" });
 

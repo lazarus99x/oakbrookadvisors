@@ -38,7 +38,7 @@ export default function AdminUsersPage() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [transactionType, setTransactionType] = useState<
-    "deposit" | "withdrawal" | "profit" | "loss"
+    "deposit" | "withdrawal" | "profit" | "loss" | "trade_add" | "trade_subtract"
   >("deposit");
 
   // Active tab
@@ -200,10 +200,8 @@ export default function AdminUsersPage() {
         await createProfileIfNeeded();
       }
 
-      const deltaAmount =
-        transactionType === "withdrawal" || transactionType === "loss"
-          ? -amountNum
-          : amountNum;
+      const isSubtract = transactionType === "withdrawal" || transactionType === "loss" || transactionType === "trade_subtract";
+      const deltaAmount = isSubtract ? -amountNum : amountNum;
 
       let { data: currentBalance } = await supabase
         .from("user_balances")
@@ -217,6 +215,7 @@ export default function AdminUsersPage() {
           .insert({
             user_id: selectedUser.id,
             account_balance: 0,
+            trading_balance: 0,
             profit_balance: 0,
             funding_balance: 0,
           })
@@ -232,29 +231,25 @@ export default function AdminUsersPage() {
 
       let updateData: any = { updated_at: new Date().toISOString() };
 
-      if (transactionType === "profit") {
-        updateData.profit_balance =
-          (currentBalance.profit_balance || 0) + deltaAmount;
-      } else if (transactionType === "deposit") {
-        updateData.account_balance =
-          (currentBalance.account_balance || 0) + deltaAmount;
-      } else if (
-        transactionType === "withdrawal" ||
-        transactionType === "loss"
-      ) {
-        updateData.account_balance =
-          (currentBalance.account_balance || 0) + deltaAmount;
+      // Independent operations - no cross-connections between fields
+      if (transactionType === "deposit") {
+        updateData.account_balance = (currentBalance.account_balance || 0) + deltaAmount;
+      } else if (transactionType === "withdrawal") {
+        updateData.account_balance = (currentBalance.account_balance || 0) + deltaAmount;
+      } else if (transactionType === "profit") {
+        updateData.profit_balance = (currentBalance.profit_balance || 0) + deltaAmount;
+      } else if (transactionType === "loss") {
+        updateData.account_balance = (currentBalance.account_balance || 0) + deltaAmount;
+      } else if (transactionType === "trade_add") {
+        updateData.trading_balance = (currentBalance.trading_balance || 0) + deltaAmount;
+      } else if (transactionType === "trade_subtract") {
+        updateData.trading_balance = (currentBalance.trading_balance || 0) + deltaAmount;
       }
 
-      const accountBal =
-        updateData.account_balance !== undefined
-          ? updateData.account_balance
-          : currentBalance.account_balance || 0;
-      const profitBal =
-        updateData.profit_balance !== undefined
-          ? updateData.profit_balance
-          : currentBalance.profit_balance || 0;
-      updateData.balance = accountBal + profitBal;
+      updateData.balance =
+        (updateData.account_balance ?? currentBalance.account_balance ?? 0) +
+        (updateData.trading_balance ?? currentBalance.trading_balance ?? 0) +
+        (updateData.profit_balance ?? currentBalance.profit_balance ?? 0);
 
       const { error: balanceError } = await supabase
         .from("user_balances")
@@ -263,22 +258,30 @@ export default function AdminUsersPage() {
 
       if (balanceError) throw balanceError;
 
+      // Log transaction - use valid types from DB check constraint
+      const txType = transactionType === "trade_add" ? "deposit" : 
+                     transactionType === "trade_subtract" ? "withdrawal" : transactionType;
       const { error: transactionError } = await supabase
         .from("transactions")
         .insert({
           user_id: selectedUser.id,
-          type: transactionType,
+          type: txType,
           amount: amountNum,
-          description: description || transactionType.charAt(0).toUpperCase() + transactionType.slice(1),
+          description: description || `${transactionType === "trade_add" ? "Add Trade Balance" : transactionType === "trade_subtract" ? "Subtract Trade Balance" : transactionType.charAt(0).toUpperCase() + transactionType.slice(1)}`,
         });
 
       if (transactionError) throw transactionError;
 
       setAmount("");
       setDescription("");
-      toast.success(
-        `Successfully ${transactionType === "deposit" ? "deposited" : transactionType === "withdrawal" ? "withdrawn" : transactionType === "profit" ? "added profit" : "added loss"} $${amountNum.toFixed(2)}`
-      );
+      const actionLabel = 
+        transactionType === "deposit" ? "deposited" :
+        transactionType === "withdrawal" ? "withdrawn" :
+        transactionType === "profit" ? "added profit" :
+        transactionType === "loss" ? "added loss" :
+        transactionType === "trade_add" ? "added to trade balance" :
+        "subtracted from trade balance";
+      toast.success(`Successfully ${actionLabel} $${amountNum.toFixed(2)}`);
 
       await loadUserProfile(selectedUser.id);
     } catch (error: any) {
@@ -480,6 +483,14 @@ export default function AdminUsersPage() {
                             </div>
                             <div>
                               <span className="text-muted-foreground">
+                                Trading:
+                              </span>
+                              <p className="font-semibold text-blue-500">
+                                {formatCurrency(userBalance.trading_balance)}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
                                 Profit:
                               </span>
                               <p className="font-semibold text-green-500">
@@ -492,9 +503,9 @@ export default function AdminUsersPage() {
                               </span>
                               <p className="font-semibold text-lg">
                                 {formatCurrency(
-                                  userBalance.balance ||
-                                    (userBalance.account_balance || 0) +
-                                      (userBalance.profit_balance || 0)
+                                  (userBalance.account_balance || 0) +
+                                    (userBalance.trading_balance || 0) +
+                                    (userBalance.profit_balance || 0)
                                 )}
                               </p>
                             </div>
@@ -693,14 +704,19 @@ export default function AdminUsersPage() {
                         "No email"}
                     </p>
                     {userBalance && (
-                      <div className="mt-2 pt-2 border-t">
+                      <div className="mt-2 pt-2 border-t space-y-1">
                         <p className="text-xs text-muted-foreground">
-                          Current Balance:{" "}
-                          <span className="font-semibold">
+                          Account: <span className="font-semibold">{formatCurrency(userBalance.account_balance)}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Trading: <span className="font-semibold text-blue-500">{formatCurrency(userBalance.trading_balance)}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Total: <span className="font-semibold">
                             {formatCurrency(
-                              userBalance.balance ||
-                                (userBalance.account_balance || 0) +
-                                  (userBalance.profit_balance || 0)
+                              (userBalance.account_balance || 0) +
+                                (userBalance.trading_balance || 0) +
+                                (userBalance.profit_balance || 0)
                             )}
                           </span>
                         </p>
@@ -723,6 +739,8 @@ export default function AdminUsersPage() {
                       <option value="withdrawal">Withdrawal</option>
                       <option value="profit">Add Profit</option>
                       <option value="loss">Add Loss</option>
+                      <option value="trade_add">Add Trade Balance</option>
+                      <option value="trade_subtract">Subtract Trade Balance</option>
                     </select>
                   </div>
 
@@ -757,7 +775,8 @@ export default function AdminUsersPage() {
                     loading={actionLoading === "transaction"}
                     className={`w-full ${
                       transactionType === "deposit" ||
-                      transactionType === "profit"
+                      transactionType === "profit" ||
+                      transactionType === "trade_add"
                         ? "bg-green-500 hover:bg-green-600"
                         : "bg-red-500 hover:bg-red-600"
                     }`}
@@ -774,13 +793,23 @@ export default function AdminUsersPage() {
                     {transactionType === "loss" && (
                       <TrendingDown className="w-4 h-4 mr-2" />
                     )}
+                    {transactionType === "trade_add" && (
+                      <TrendingUp className="w-4 h-4 mr-2 text-blue-400" />
+                    )}
+                    {transactionType === "trade_subtract" && (
+                      <TrendingDown className="w-4 h-4 mr-2 text-blue-400" />
+                    )}
                     {transactionType === "deposit"
                       ? "Deposit Funds"
                       : transactionType === "withdrawal"
                         ? "Withdraw Funds"
                         : transactionType === "profit"
                           ? "Add Profit"
-                          : "Add Loss"}
+                          : transactionType === "trade_add"
+                            ? "Add Trade Balance"
+                            : transactionType === "trade_subtract"
+                              ? "Subtract Trade Balance"
+                              : "Add Loss"}
                   </LoadingButton>
                 </div>
               ) : (
