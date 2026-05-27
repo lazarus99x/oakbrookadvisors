@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/utils/supabase/client";
-import { User, Key, Bell, CheckCircle2, Loader2, Save, RefreshCw } from "lucide-react";
+import { User, Key, Bell, CheckCircle2, Loader2, Save, Eye, EyeOff, Shield } from "lucide-react";
 
 export default function AdminSettingsPage() {
   const supabase = createClient();
@@ -20,8 +20,13 @@ export default function AdminSettingsPage() {
   const [profileMessage, setProfileMessage] = useState("");
 
   // ── Password state ──
-  const [passwordSending, setPasswordSending] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   // ── Notification preferences ──
   const [notifications, setNotifications] = useState({
@@ -86,21 +91,58 @@ export default function AdminSettingsPage() {
     setTimeout(() => setProfileMessage(""), 3000);
   };
 
-  const sendPasswordReset = async () => {
-    setPasswordSending(true);
+  const changePassword = async () => {
+    setPasswordSaving(true);
     setPasswordMessage("");
+    setPasswordError("");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/admin/sign-in`,
+    // Validate
+    if (!oldPassword) {
+      setPasswordError("Current password is required");
+      setPasswordSaving(false);
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      setPasswordSaving(false);
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match");
+      setPasswordSaving(false);
+      return;
+    }
+
+    // Verify old password by attempting re-auth
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: oldPassword,
     });
 
-    if (error) {
-      setPasswordMessage(error.message);
-    } else {
-      setPasswordMessage("Check your email for the reset link");
+    if (signInError) {
+      setPasswordError("Current password is incorrect");
+      setPasswordSaving(false);
+      return;
     }
-    setPasswordSending(false);
-    setTimeout(() => setPasswordMessage(""), 5000);
+
+    // Update to new password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (updateError) {
+      setPasswordError(updateError.message);
+    } else {
+      setPasswordMessage("Password updated successfully");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+    setPasswordSaving(false);
+    setTimeout(() => {
+      setPasswordMessage("");
+      setPasswordError("");
+    }, 5000);
   };
 
   const savePreferences = async () => {
@@ -195,29 +237,72 @@ export default function AdminSettingsPage() {
         <TabsContent value="password" className="mt-6">
           <Card className="p-6 space-y-5">
             <div>
-              <p className="text-sm font-medium mb-1">Reset Password</p>
+              <p className="text-sm font-medium mb-1">Change Password</p>
               <p className="text-sm text-muted-foreground mb-4">
-                We'll send a password reset link to <strong>{email}</strong>. Click the link to set a new password.
+                Enter your current password and a new password to update directly.
               </p>
             </div>
+
+            <div className="relative">
+              <p className="text-sm font-medium mb-1">Current Password</p>
+              <Input
+                type={showPasswords ? "text" : "password"}
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Enter current password"
+              />
+            </div>
+
+            <div className="relative">
+              <p className="text-sm font-medium mb-1">New Password</p>
+              <Input
+                type={showPasswords ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+            </div>
+
+            <div className="relative">
+              <p className="text-sm font-medium mb-1">Confirm New Password</p>
+              <Input
+                type={showPasswords ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowPasswords(!showPasswords)}
+                className="text-xs text-muted-foreground"
+              >
+                {showPasswords ? <EyeOff className="w-3.5 h-3.5 mr-1" /> : <Eye className="w-3.5 h-3.5 mr-1" />}
+                {showPasswords ? "Hide" : "Show"} passwords
+              </Button>
+            </div>
+
             <div className="flex items-center gap-3">
-              <Button onClick={sendPasswordReset} disabled={passwordSending} variant="outline">
-                {passwordSending ? (
+              <Button onClick={changePassword} disabled={passwordSaving}>
+                {passwordSaving ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 ) : (
-                  <RefreshCw className="w-4 h-4 mr-2" />
+                  <Shield className="w-4 h-4 mr-2" />
                 )}
-                Send Reset Link
+                Update Password
               </Button>
               {passwordMessage && (
-                <span
-                  className={`text-sm flex items-center gap-1 ${
-                    passwordMessage.includes("error") || passwordMessage.includes("Failed")
-                      ? "text-red-600"
-                      : "text-green-600"
-                  }`}
-                >
+                <span className="text-sm text-green-600 flex items-center gap-1">
                   <CheckCircle2 className="w-4 h-4" /> {passwordMessage}
+                </span>
+              )}
+              {passwordError && (
+                <span className="text-sm text-red-600 flex items-center gap-1">
+                  {passwordError}
                 </span>
               )}
             </div>
