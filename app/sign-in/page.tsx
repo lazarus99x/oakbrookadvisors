@@ -75,6 +75,12 @@ export default function SignInPage() {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <Link href="/reset-password" className="text-sm text-[#00FE01] hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+
           <Button type="submit" className="w-full bg-[#00FE01] hover:bg-[#B4FE01] text-black" disabled={loading}>
             {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
             Sign In

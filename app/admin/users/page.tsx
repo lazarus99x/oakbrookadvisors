@@ -34,6 +34,11 @@ export default function AdminUsersPage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Reset password dialog state
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+
   // Transaction form state
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -140,11 +145,10 @@ export default function AdminUsersPage() {
     }
 
     if (action === "reset_password") {
-      if (
-        !confirm("This will send a password reset email to the user. Continue?")
-      ) {
-        return;
-      }
+      setShowResetDialog(true);
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+      return;
     }
 
     setActionLoading(action);
@@ -169,6 +173,39 @@ export default function AdminUsersPage() {
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to perform action");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!selectedUser) return;
+    if (!resetNewPassword || resetNewPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
+    setActionLoading("reset_password");
+    try {
+      const response = await fetch("/api/admin/users/actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset_password", userId: selectedUser.id, newPassword: resetNewPassword }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to reset password");
+
+      toast.success(data.message || "Password reset successfully");
+      setShowResetDialog(false);
+      setResetNewPassword("");
+      setResetConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to reset password");
     } finally {
       setActionLoading(null);
     }
@@ -822,6 +859,54 @@ export default function AdminUsersPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Reset Password Dialog */}
+      {showResetDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold mb-1">Reset Password</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Set a new password for {selectedUser?.firstName || selectedUser?.emailAddresses?.[0]?.emailAddress || "this user"}
+            </p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">New Password</label>
+                <Input
+                  type="password"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Confirm Password</label>
+                <Input
+                  type="password"
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowResetDialog(false)}
+                disabled={actionLoading === "reset_password"}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleResetPassword}
+                disabled={actionLoading === "reset_password"}
+                className="bg-[#00FE01] hover:bg-[#B4FE01] text-black"
+              >
+                {actionLoading === "reset_password" ? "Resetting..." : "Reset Password"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
