@@ -177,7 +177,7 @@ export default function Home() {
                   Your Gateway to{" "}
                   <span className="relative inline-block">
                     <span className="relative z-10 text-[#00FE01]">
-                      Finacial
+                      Financial
                     </span>
                     <motion.span
                       className="absolute inset-0 bg-[#00FE01]/20 blur-2xl -z-10"
