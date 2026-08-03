@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "oakbrookadvisors",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -63,6 +63,7 @@
     "react-day-picker": "9.8.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.60.0",
+    "react-is": "^19.2.8",
     "react-resizable-panels": "^2.1.7",
     "recharts": "latest",
     "sonner": "^1.7.4",

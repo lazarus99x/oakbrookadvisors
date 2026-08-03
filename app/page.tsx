@@ -63,26 +63,25 @@ export default function Home() {
             whileTap={{ scale: 0.95 }}
           >
             <motion.img
-              src="/leverfi.png"
-              alt="OakBrookAdvisors Logo"
-              width={40}
-              height={40}
-              className="rounded-xl"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            />
-          </motion.div>
-          <motion.span
-            className="text-xl font-bold text-foreground"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            OakBrookAdvisors
-            
-          </motion.span>
-        </motion.div>
+                          src="/leverfi.png"
+                          alt="Oakbrook Advisors"
+                          width={40}
+                          height={40}
+                          className="rounded-xl"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                        />
+                      </motion.div>
+                      <motion.span
+                        className="text-xl font-bold text-foreground"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        Oakbrook Advisors
+                      </motion.span>
+                    </motion.div>
 
         <motion.div
           className="flex items-center gap-4"
@@ -588,7 +587,7 @@ export default function Home() {
           <div className="max-w-4xl mx-auto space-y-8">
             <h2 className="text-4xl font-bold">Ready to Get Started?</h2>
             <p className="text-xl text-muted-foreground">
-              Join thousands of traders who have already discovered the OakBrookAdvisors
+              Join thousands of traders who have already discovered the Oakbrook Advisors
               advantage.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -739,7 +738,7 @@ export default function Home() {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© 2025 OakBrookAdvisors. All rights reserved.</p>
+          <p>© 2025 Oakbrook Advisors. All rights reserved.</p>
         </div>
       </footer>
     </div>

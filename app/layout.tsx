@@ -9,8 +9,11 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "OakBrookAdvisors",
-  description: "OakBrookAdvisors funding and automated trading platform",
+  title: "Oakbrook Advisors",
+  description: "Oakbrook Advisors — professional trading and investment platform",
+  icons: [
+    { rel: "icon", url: "/favicon.svg", type: "image/svg+xml" },
+  ],
 };
 
 export default function RootLayout({

@@ -49,7 +49,7 @@ export function Sidebar() {
             >
               <motion.img
                 src="/leverfi.png"
-                alt="OakBrookAdvisors Logo"
+                alt="Oakbrook Advisors"
                 className="w-full h-full object-contain"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -62,7 +62,7 @@ export function Sidebar() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              OakBrookAdvisors
+              Oakbrook Advisors
             </motion.span>
           </motion.div>
         </Link>

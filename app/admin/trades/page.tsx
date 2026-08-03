@@ -323,18 +323,20 @@ export default function AdminTradesPage() {
         } else {
           // SELL order - check holdings (skip for AI trades with signal_id)
           let sellValue, holdingsAdjusted = false;
+          let holding: any = null;
 
           if (trade.signal_id) {
             // AI trade - no holdings check, just credit the trading balance
             sellValue = Number(trade.total_value) * 0.999;
             holdingsAdjusted = true;
           } else {
-            const { data: holding } = await supabase
+            const { data: h } = await supabase
               .from("user_holdings")
               .select("*")
               .eq("user_id", trade.user_id)
               .eq("symbol", trade.symbol)
               .maybeSingle();
+            holding = h;
 
             if (!holding || Number(holding.amount) < Number(trade.amount)) {
               toast.error("User has insufficient holdings");
@@ -391,18 +393,19 @@ export default function AdminTradesPage() {
           });
 
           // Calculate profit/loss
-          const profit = sellValue - (Number(holding.average_buy_price) * Number(trade.amount));
-          
-          if (profit > 0) {
-            // Create profit record for admin approval
-            await supabase.from("profit_records").insert({
-              user_id: trade.user_id,
-              trade_id: tradeId,
-              symbol: trade.symbol,
-              profit_amount: profit,
-              profit_percentage: (profit / (Number(holding.average_buy_price) * Number(trade.amount))) * 100,
-              status: "pending",
-            });
+          if (holding) {
+            const profit = sellValue - (Number(holding.average_buy_price) * Number(trade.amount));
+            
+            if (profit > 0) {
+              await supabase.from("profit_records").insert({
+                user_id: trade.user_id,
+                trade_id: tradeId,
+                symbol: trade.symbol,
+                profit_amount: profit,
+                profit_percentage: (profit / (Number(holding.average_buy_price) * Number(trade.amount))) * 100,
+                status: "pending",
+              });
+            }
           }
 
           toast.success("Sell order approved and balance updated");

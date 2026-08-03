@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <Card className="w-full max-w-md p-8 bg-card border-border relative z-10">
         <div className="text-center mb-8">
-          <img src="/leverfi.png" alt="OakBrookAdvisors" className="w-12 h-12 mx-auto mb-4" />
+          <img src="/leverfi.png" alt="Oakbrook Advisors" className="w-12 h-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground">Reset Password</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             Enter your email and we&apos;ll send you a reset link
